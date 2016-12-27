@@ -1,3 +1,0 @@
-C:\Users\Salda\Documents\VS Projects\Loosing virginity\MATLAB_trader\MATLAB_trader\bin\Debug\MATLAB_trader.exe.config
-C:\Users\Salda\Documents\VS Projects\Loosing virginity\MATLAB_trader\MATLAB_trader\obj\Debug\Interop.MLApp.dll
-C:\Users\Salda\Documents\VS Projects\Loosing virginity\MATLAB_trader\MATLAB_trader\obj\Debug\MATLAB_trader.csproj.ResolveComReference.cache
