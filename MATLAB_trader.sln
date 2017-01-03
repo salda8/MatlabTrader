@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MATLAB_trader", "MATLAB_trader\MATLAB_trader.csproj", "{758A4822-CB55-4C73-85A3-2B0288564592}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MATLAB_trader", "MATLAB_trader.csproj", "{758A4822-CB55-4C73-85A3-2B0288564592}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,13 +19,5 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 2
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://salda.visualstudio.com/defaultcollection
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = MATLAB_trader\\MATLAB_trader.csproj
-		SccProjectName1 = MATLAB_trader
-		SccLocalPath1 = MATLAB_trader
-	EndGlobalSection
+	
 EndGlobal
