@@ -37,17 +37,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CSharpAPI, Version=9.72.3.0, Culture=neutral, processorArchitecture=x86">
+    <Reference Include="CSharpAPI, Version=9.72.18.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Visual Studio 2015\Projects\Loosing virginity\TradingIB\CsharpAPI\bin\Debug\CSharpAPI.dll</HintPath>
+      <HintPath>Common\Resources\CSharpAPI.dll</HintPath>
     </Reference>
     <Reference Include="MoreLinq.Portable">
       <HintPath>..\..\..\..\Visual Studio 2015\Projects\Loosing virginity\ManagingApp\packages\MoreLinq.Portable.1.1.0\lib\portable-net4+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1\MoreLinq.Portable.dll</HintPath>
     </Reference>
     <Reference Include="MySql.Data, Version=6.9.6.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL" />
     <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Common\Resources\NDesk.Options.dll</HintPath>
+      <HintPath>packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -89,12 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="1435779423_stock-market.ico" />
-    <Content Include="Common\Resources\CSharpAPI.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Common\Resources\NDesk.Options.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="Common\Resources\CSharpAPI.dll" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="MLApp">
@@ -107,6 +102,7 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
