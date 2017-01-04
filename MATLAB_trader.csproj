@@ -66,8 +66,7 @@
     <Compile Include="Common\Tools.cs" />
     <Compile Include="Data\Data.cs" />
     <Compile Include="Data\DataType\BarData2.cs" />
-    <Compile Include="Data\DataType\CommissionMessage.cs" />
-    <Compile Include="Data\DataType\ExecutionMessage.cs" />
+    <Compile Include="Data\DataType\ObjectContructorHelper.cs" />
     <Compile Include="Data\DataType\HighResolutionDateTime.cs" />
     <Compile Include="Data\DataType\HistoricalTrade.cs" />
     <Compile Include="Data\DataType\LiveTrade.cs" />
@@ -107,7 +106,16 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\qdms\EntityData\EntityData.csproj">
+      <Project>{aea3426e-81b7-4c7e-a1cc-29743229cdcc}</Project>
+      <Name>EntityData</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\qdms\QDMS\QDMS.csproj">
+      <Project>{7ea40d71-4d14-4b86-b07d-932959fa0d20}</Project>
+      <Name>QDMS</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

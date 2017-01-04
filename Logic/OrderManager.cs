@@ -5,12 +5,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using MATLAB_trader.Data;
 using MATLAB_trader.Data.DataType;
+using QDMS;
 
 namespace MATLAB_trader.Logic
 {
     public class OrderManager
     {
         private static readonly TaskFactory Tf = new TaskFactory(TaskScheduler.Default);
+        private static List<OpenOrder> OpenOrderMessageList= new List<OpenOrder>();
+        private static List<ExecutionMessage> ExecutionMessageList= new List<ExecutionMessage>();
+        private static List<LiveTrade> LiveTrades= new List<LiveTrade>();
 
         #region DatabaseInteraction
 
@@ -245,48 +249,17 @@ namespace MATLAB_trader.Logic
             }
         }
 
+        public static TradeDirection ConvertFromString(string side) => side=="SLD"? TradeDirection.Long : TradeDirection.Short;
+
         /// <summary>
         ///     Handles the commission message.
         /// </summary>
         /// <param name="message">The message.</param>
         public static void HandleCommissionMessage(CommissionMessage message)
         {
+            //todo "creating" HistoryTrade should not be handling this App. Overview app or server. Just add both messages to database.
             if (message.RealizedPnL > 100000000) return;
 
-            var list = new List<CommissionMessage> {message};
-            var item = ExecutionMessage.ExecutionMessageList.LastOrDefault(x => x.ExecutionId == message.ExecutionId);
-
-            if (item != null)
-            {
-                item.Side = item.Side == "SLD" ? "BOT" : "SLD";
-
-                var join = (from s1 in ExecutionMessage.ExecutionMessageList
-                    join s2 in list
-                        on s1.ExecutionId equals s2.ExecutionId
-                    select new HistoricalTrade
-                        (
-                        s1.AccountNumber,
-                        s1.ExecutionId,
-                        s1.Time,
-                        s1.Side,
-                        s1.Qty,
-                        s1.ContractSymbol + " " + s1.ContractSecType,
-                        s1.Price,
-                        s2.Commission,
-                        s2.RealizedPnL
-                        )).ToList();
-                //if (@join.Count != 1)
-                //{
-                //    return;
-                //}
-                HistoricalTrade.HistoricalTradeList.Add(@join[0]);
-                HistoricalTradeListInsertQuery(@join[0]);
-            }
-            else
-            {
-                Console.WriteLine("Can not find execution message with id:" + message.ExecutionId + " || " +
-                                  DateTime.Now);
-            }
         }
 
         /// <summary>
@@ -320,18 +293,18 @@ namespace MATLAB_trader.Logic
         ///     Handles the open order.
         /// </summary>
         /// <param name="message">The message.</param>
-        public static void HandleOpenOrder(OpenOrderMessage message)
+        public static void HandleOpenOrder(OpenOrder message)
         {
-            if (message.OrderState == "Submitted")
+            if (message.Status == "Submitted")
             {
-                OpenOrderMessage.OpenOrderMessageList.Add(message);
+                OpenOrderMessageList.Add(message);
                 OpenOrderListInsertQuery(message);
             }
-            else if (message.OrderState == "Cancelled")
+            else if (message.Status == "Cancelled")
             {
                 CheckSubmittedOrders(message);
             }
-            else if (message.OrderState == "Filled")
+            else if (message.Status == "Filled")
             {
                 CheckSubmittedOrders(message);
             }
@@ -343,7 +316,7 @@ namespace MATLAB_trader.Logic
         ///     Opens the order list insert query.
         /// </summary>
         /// <param name="message">The message.</param>
-        private static void OpenOrderListInsertQuery(OpenOrderMessage message)
+        private static void OpenOrderListInsertQuery(OpenOrder message)
         {
             using (var con = Db.OpenConnection())
             {
@@ -355,7 +328,7 @@ namespace MATLAB_trader.Logic
                     cmd.Parameters.AddWithValue("@permId", message.PermId);
                     cmd.Parameters.AddWithValue("@AccountNumber", message.Account);
                     cmd.Parameters.AddWithValue("@ContractSymbol", message.ContractSymbol);
-                    cmd.Parameters.AddWithValue("@Qty", message.OrderState);
+                    cmd.Parameters.AddWithValue("@Qty", message.Status);
                     cmd.Parameters.AddWithValue("@Side", message.LimitPrice);
                     cmd.Parameters.AddWithValue("@AvgFillPrice", message.Qty);
                     cmd.ExecuteNonQuery();
@@ -382,22 +355,22 @@ namespace MATLAB_trader.Logic
         /// <param name="message">The message.</param>
         private static void CheckSubmittedOrders(OrderStatusMessage message)
         {
-            var item = OpenOrderMessage.OpenOrderMessageList.FindIndex(x => x.PermId == message.PermId);
+            var item = OpenOrderMessageList.FindIndex(x => x.PermId == message.PermId);
             if (item == -1) return;
-            OpenOrderMessage.OpenOrderMessageList.RemoveAt(item);
-            OpenOrderListDeleteQuery(OpenOrderMessage.OpenOrderMessageList[item].PermId);
+           OpenOrderMessageList.RemoveAt(item);
+            OpenOrderListDeleteQuery(OpenOrderMessageList[item].PermId);
         }
 
         /// <summary>
         ///     Checks the submitted orders.
         /// </summary>
         /// <param name="message">The message.</param>
-        public static void CheckSubmittedOrders(OpenOrderMessage message)
+        public static void CheckSubmittedOrders(OpenOrder message)
         {
-            var item = OpenOrderMessage.OpenOrderMessageList.FindIndex(x => x.PermId == message.PermId);
+            var item = OpenOrderMessageList.FindIndex(x => x.PermId == message.PermId);
             if (item == -1) return;
-            OpenOrderMessage.OpenOrderMessageList.RemoveAt(item);
-            OpenOrderListDeleteQuery(OpenOrderMessage.OpenOrderMessageList[item].PermId);
+            OpenOrderMessageList.RemoveAt(item);
+            OpenOrderListDeleteQuery(OpenOrderMessageList[item].PermId);
         }
 
         /// <summary>
@@ -417,58 +390,59 @@ namespace MATLAB_trader.Logic
 
         /// <summary>
         ///     Handles the execution message.
+        ///     todo not sure if this should be here and not on server
         /// </summary>
         /// <param name="message">The message.</param>
         public static void HandleExecutionMessage(ExecutionMessage message)
         {
-            ExecutionMessage.ExecutionMessageList.Add(message);
-            if (ItIsFirstTradeOnAccount(message))
-            {
-                var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
-                    message.ContractSecType, message.ContractSymbol, message.Qty, message.Side, message.Price,
-                    message.Time);
-                LiveTrade.LiveTradeListCollection.Add(liveTrade);
-                LiveTradeInsertQuery(liveTrade);
-            }
-            else if (ItIsSameSideTrade(message))
-            {
-                var item =
-                    LiveTrade.LiveTradeListCollection.LastOrDefault(
-                        x => x.AccountNumber == message.AccountNumber && x.ContractSymbol == message.ContractSymbol);
-                var newFillPrice = (item.AvgFillPrice*item.Qty + message.Price*message.Qty)/(item.Qty + message.Qty);
-                var newQty = item.Qty + message.Qty;
+            //ExecutionMessageList.Add(message);
+            //if (ItIsFirstTradeOnAccount(message))
+            //{
+            //    var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
+            //        message.ContractSecType, message.ContractSymbol, message.Qty, message.Side, message.Price,
+            //        message.Time);
+            //    LiveTrades.Add(liveTrade);
+            //    LiveTradeInsertQuery(liveTrade);
+            //}
+            //else if (ItIsSameSideTrade(message))
+            //{
+            //    var item =
+            //        LiveTrades.LastOrDefault(
+            //            x => x.AccountNumber == message.AccountNumber && x.ContractSymbol == message.ContractSymbol);
+            //    var newFillPrice = (item.AvgFillPrice*item.Qty + message.Price*message.Qty)/(item.Qty + message.Qty);
+            //    var newQty = item.Qty + message.Qty;
 
-                var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
-                    message.ContractSecType, message.ContractSymbol, newQty, message.Side, newFillPrice, message.Time);
-                LiveTrade.LiveTradeListCollection.Add(liveTrade);
-                //LiveTradeUpdateQuery(liveTrade);
-                LiveTradeListDeleteQuery(message);
-                LiveTradeInsertQuery(liveTrade);
-                LiveTrade.LiveTradeListCollection.Remove(item);
-            }
-            else //different side trade
-            {
-                var item =
-                    LiveTrade.LiveTradeListCollection.LastOrDefault(
-                        x => x.AccountNumber == message.AccountNumber && x.ContractSymbol == message.ContractSymbol);
+            //    var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
+            //        message.ContractSecType, message.ContractSymbol, newQty, message.Side, newFillPrice, message.Time);
+            //    LiveTrades.Add(liveTrade);
+            //    //LiveTradeUpdateQuery(liveTrade);
+            //    LiveTradeListDeleteQuery(message);
+            //    LiveTradeInsertQuery(liveTrade);
+            //    LiveTrades.Remove(item);
+            //}
+            //else //different side trade
+            //{
+            //    var item =
+            //        LiveTrades.LastOrDefault(
+            //            x => x.AccountNumber == message.AccountNumber && x.ContractSymbol == message.ContractSymbol);
 
-                if (message.Qty > item.Qty)
-                {
-                    var newFillPrice = (item.AvgFillPrice*item.Qty - message.Price*message.Qty)/(item.Qty - message.Qty);
-                    var newQty = message.Qty - item.Qty;
-                    var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
-                        message.ContractSecType, message.ContractSymbol, newQty, message.Side, newFillPrice,
-                        message.Time);
-                    LiveTrade.LiveTradeListCollection.Add(liveTrade);
-                    LiveTradeListDeleteQuery(message);
-                    LiveTradeInsertQuery(liveTrade);
-                }
-                else
-                {
-                    LiveTradeListDeleteQuery(message);
-                }
-                LiveTrade.LiveTradeListCollection.Remove(item);
-            }
+            //    if (message.Qty > item.Qty)
+            //    {
+            //        var newFillPrice = (item.AvgFillPrice*item.Qty - message.Price*message.Qty)/(item.Qty - message.Qty);
+            //        var newQty = message.Qty - item.Qty;
+            //        var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
+            //            message.ContractSecType, message.ContractSymbol, newQty, message.Side, newFillPrice,
+            //            message.Time);
+            //        LiveTrades.Add(liveTrade);
+            //        LiveTradeListDeleteQuery(message);
+            //        LiveTradeInsertQuery(liveTrade);
+            //    }
+            //    else
+            //    {
+            //        LiveTradeListDeleteQuery(message);
+            //    }
+            //    LiveTrades.Remove(item);
+            //}
 
             // Insert
         }
@@ -479,24 +453,24 @@ namespace MATLAB_trader.Logic
         /// <param name="liveTrade">The live trade.</param>
         private static void LiveTradeUpdateQuery(LiveTrade liveTrade)
         {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "UPDATE livetrades SET PermId=?permId,Qty=?qty, Side=?side, AvgFillPrice=?avgFillPrice, Time=?time WHERE AccountNumber=?accountNumber AND ContractSymbol=?contractSymbol";
-                    cmd.Parameters.AddWithValue("?permId", liveTrade.PermId);
-                    cmd.Parameters.AddWithValue("?accountNumber", liveTrade.AccountNumber);
-                    cmd.Parameters.AddWithValue("?orderID", liveTrade.OrderId);
-                    cmd.Parameters.AddWithValue("?contractSymbol", liveTrade.ContractSymbol);
+            //using (var con = Db.OpenConnection())
+            //{
+            //    using (var cmd = con.CreateCommand())
+            //    {
+            //        cmd.CommandText =
+            //            "UPDATE livetrades SET PermId=?permId,Qty=?qty, Side=?side, AvgFillPrice=?avgFillPrice, Time=?time WHERE AccountNumber=?accountNumber AND ContractSymbol=?contractSymbol";
+            //        cmd.Parameters.AddWithValue("?permId", liveTrade.PermId);
+            //        cmd.Parameters.AddWithValue("?accountNumber", liveTrade.AccountNumber);
+            //        cmd.Parameters.AddWithValue("?orderID", liveTrade.OrderId);
+            //        cmd.Parameters.AddWithValue("?contractSymbol", liveTrade.ContractSymbol);
 
-                    cmd.Parameters.AddWithValue("?qty", liveTrade.Qty);
-                    cmd.Parameters.AddWithValue("?side", liveTrade.Side);
-                    cmd.Parameters.AddWithValue("?avgFillPrice", liveTrade.AvgFillPrice);
-                    cmd.Parameters.AddWithValue("?time", liveTrade.Time);
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            //        cmd.Parameters.AddWithValue("?qty", liveTrade.Qty);
+            //        cmd.Parameters.AddWithValue("?side", liveTrade.Side);
+            //        cmd.Parameters.AddWithValue("?avgFillPrice", liveTrade.AvgFillPrice);
+            //        cmd.Parameters.AddWithValue("?time", liveTrade.Time);
+            //        cmd.ExecuteNonQuery();
+            //    }
+            //}
         }
 
         /// <summary>
@@ -505,24 +479,24 @@ namespace MATLAB_trader.Logic
         /// <param name="liveTrade">The live trade.</param>
         private static void LiveTradeInsertQuery(LiveTrade liveTrade)
         {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "INSERT INTO LiveTrades (PermId, AccountNumber, OrderID, ContractSymbol, Qty, Side, AvgFillPrice, Time) " +
-                        "VALUES(@permId,@AccountNumber,@OrderID,@ContractSymbol,@Qty,@Side,@AvgFillPrice,@Time)";
-                    cmd.Parameters.AddWithValue("@permId", liveTrade.PermId);
-                    cmd.Parameters.AddWithValue("@AccountNumber", liveTrade.AccountNumber);
-                    cmd.Parameters.AddWithValue("@OrderID", liveTrade.OrderId);
-                    cmd.Parameters.AddWithValue("@ContractSymbol", liveTrade.ContractSymbol);
-                    cmd.Parameters.AddWithValue("@Qty", liveTrade.Qty);
-                    cmd.Parameters.AddWithValue("@Side", liveTrade.Side);
-                    cmd.Parameters.AddWithValue("@AvgFillPrice", liveTrade.AvgFillPrice);
-                    cmd.Parameters.AddWithValue("@Time", liveTrade.Time);
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            //using (var con = Db.OpenConnection())
+            //{
+            //    using (var cmd = con.CreateCommand())
+            //    {
+            //        cmd.CommandText =
+            //            "INSERT INTO LiveTrades (PermId, AccountNumber, OrderID, ContractSymbol, Qty, Side, AvgFillPrice, Time) " +
+            //            "VALUES(@permId,@AccountNumber,@OrderID,@ContractSymbol,@Qty,@Side,@AvgFillPrice,@Time)";
+            //        cmd.Parameters.AddWithValue("@permId", liveTrade.PermId);
+            //        cmd.Parameters.AddWithValue("@AccountNumber", liveTrade.AccountNumber);
+            //        cmd.Parameters.AddWithValue("@OrderID", liveTrade.OrderId);
+            //        cmd.Parameters.AddWithValue("@ContractSymbol", liveTrade.ContractSymbol);
+            //        cmd.Parameters.AddWithValue("@Qty", liveTrade.Qty);
+            //        cmd.Parameters.AddWithValue("@Side", liveTrade.Side);
+            //        cmd.Parameters.AddWithValue("@AvgFillPrice", liveTrade.AvgFillPrice);
+            //        cmd.Parameters.AddWithValue("@Time", liveTrade.Time);
+            //        cmd.ExecuteNonQuery();
+            //    }
+            //}
         }
 
         /// <summary>
@@ -530,14 +504,13 @@ namespace MATLAB_trader.Logic
         /// </summary>
         /// <param name="message">The message.</param>
         /// <returns></returns>
-        private static
-            bool ItIsSameSideTrade(ExecutionMessage message)
+        private static bool ItIsSameSideTrade(ExecutionMessage message)
         {
-            var itemfound = LiveTrade.LiveTradeListCollection.Any(
+           return LiveTrades.Any(
                 x =>
-                    x.AccountNumber == message.AccountNumber && x.Side == message.Side &&
-                    x.ContractSymbol == message.ContractSymbol);
-            return itemfound;
+                    x.TradeDirection == ConvertFromString(message.Side) &&
+                    x.Instrument.SymbolForOrders==message.ContractSymbol);
+          
         }
 
         /// <summary>
@@ -547,10 +520,9 @@ namespace MATLAB_trader.Logic
         /// <returns></returns>
         private static bool ItIsFirstTradeOnAccount(ExecutionMessage message)
         {
-            var itemfound =
-                LiveTrade.LiveTradeListCollection.Any(
-                    x => x.AccountNumber == message.AccountNumber && x.ContractSymbol == message.ContractSymbol);
-            return !itemfound;
+           return
+                LiveTrades.Any(
+                     x=>x.Instrument.SymbolForOrders == message.ContractSymbol);
         }
 
         /// <summary>
@@ -666,68 +638,70 @@ namespace MATLAB_trader.Logic
         }
 
         /// <summary>
+        /// Looks OBSOLETE
         ///     Selects the open orders from database.
         /// </summary>
         /// <param name="accountNumber">The account number.</param>
-        public static void SelectOpenOrdersFromDatabase(string accountNumber)
-        {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "SELECT * FROM OpenOrders WHERE AccountNumber=?acc";
-                    cmd.Parameters.AddWithValue("?acc", "DU" + accountNumber);
+        //public static void SelectOpenOrdersFromDatabase(string accountNumber)
+        //{
+        //    using (var con = Db.OpenConnection())
+        //    {
+        //        using (var cmd = con.CreateCommand())
+        //        {
+        //            cmd.CommandText =
+        //                "SELECT * FROM OpenOrders WHERE AccountNumber=?acc";
+        //            cmd.Parameters.AddWithValue("?acc", "DU" + accountNumber);
 
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            OpenOrderMessage.OpenOrderMessageList.Add(new OpenOrderMessage
-                            {
-                                Account = reader.GetString(6),
-                                PermId = reader.GetInt32(1),
-                                ContractSymbol = reader.GetString(2),
-                                OrderState = reader.GetString(3),
-                                LimitPrice = reader.GetDouble(4),
-                                Qty = reader.GetInt16(5),
-                                Side = reader.GetString(7),
-                                Type = reader.GetString(9),
-                                Tif = reader.GetString(10)
-                            });
-                        }
-                    }
-                }
-            }
-        }
+        //            using (var reader = cmd.ExecuteReader())
+        //            {
+        //                while (reader.Read())
+        //                {
+        //                    OpenOrderMessageList.Add(new OpenOrder
+        //                    {
+        //                        Account = reader.GetString(6),
+        //                        PermId = reader.GetInt32(1),
+        //                        ContractSymbol = reader.GetString(2),
+        //                        Status = reader.GetString(3),
+        //                        LimitPrice = reader.GetDouble(4),
+        //                        Qty = reader.GetInt16(5),
+        //                        Side = reader.GetString(7),
+        //                        Type = reader.GetString(9),
+        //                        Tif = reader.GetString(10)
+        //                    });
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
 
         /// <summary>
+        /// LOOKS OBSOLETE
         ///     Selects the live trade from database.
         /// </summary>
         /// <param name="accountNumber">The account number.</param>
-        public static void SelectLiveTradeFromDatabase(string accountNumber)
-        {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "SELECT * FROM livetrades WHERE AccountNumber=?acc";
-                    cmd.Parameters.AddWithValue("?acc", "DU" + accountNumber);
+        //public static void SelectLiveTradeFromDatabase(string accountNumber)
+        //{
+        //    using (var con = Db.OpenConnection())
+        //    {
+        //        using (var cmd = con.CreateCommand())
+        //        {
+        //            cmd.CommandText =
+        //                "SELECT * FROM livetrades WHERE AccountNumber=?acc";
+        //            cmd.Parameters.AddWithValue("?acc", "DU" + accountNumber);
 
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            LiveTrade.LiveTradeListCollection.Add(new LiveTrade(reader.GetInt16(1), reader.GetString(3),
-                                reader.GetInt16(6), reader.GetString(2).Substring(2, 5),
-                                reader.GetString(2).Substring(0, 2), reader.GetInt16(4), reader.GetString(5),
-                                reader.GetDouble(7), reader.GetDateTime(10)));
-                        }
-                    }
-                }
-            }
-        }
+        //            using (var reader = cmd.ExecuteReader())
+        //            {
+        //                while (reader.Read())
+        //                {
+        //                    LiveTrades.Add(new LiveTrade(reader.GetInt16(1), reader.GetString(3),
+        //                        reader.GetInt16(6), reader.GetString(2).Substring(2, 5),
+        //                        reader.GetString(2).Substring(0, 2), reader.GetInt16(4), reader.GetString(5),
+        //                        reader.GetDouble(7), reader.GetDateTime(10)));
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
 
         #endregion
     }

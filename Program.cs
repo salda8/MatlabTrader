@@ -8,13 +8,14 @@ namespace MATLAB_trader
 {
     public class Program
     {
+        public static int AccountID;
         public static void Main(string[] args)
         {
             var showHelp = false;
             var names = new List<string>();
             var port = new List<int>();
             var account = new List<string>();
-            var repeat = 1;
+           
 
             var p = new OptionSet
             {
@@ -85,5 +86,10 @@ namespace MATLAB_trader
             //Console.ReadKey();
             //return 0;
         }
+        public static int LoadedSymbolInstrumentID(string messageContractSymbol)
+        {
+            return LoadedSymbolsDictionary[messageContractSymbol];
+        }
+        public static Dictionary<string, int> LoadedSymbolsDictionary { get; set; }
     }
 }

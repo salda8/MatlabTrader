@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ExpressMapper.Extensions;
 using IBApi;
 using MATLAB_trader.Data.DataType;
+using QDMS;
 
 namespace MATLAB_trader.Logic
 {
@@ -275,7 +277,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("OpenOrder. ID: " + orderId + ", " + contract.Symbol + ", " + contract.SecType + " @ " +
                               contract.Exchange + ": " + order.Action + ", " + order.OrderType + " " +
                               order.TotalQuantity + ", " + orderState.Status + "\n");
-            _tf.StartNew(() => OrderManager.HandleOpenOrder(new OpenOrderMessage(orderId, contract, order, orderState)));
+            _tf.StartNew(() => OrderManager.HandleOpenOrder(ObjectContructorHelper.GetOpenOrder(contract, order, orderState)));
         }
 
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
@@ -283,7 +285,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("ExecDetails. " + reqId + " - " + contract.Symbol + ", " + contract.SecType + ", " +
                               contract.Currency + " - " + execution.ExecId + ", " + execution.OrderId + ", " +
                               execution.Shares + "\n");
-            _tf.StartNew(() => OrderManager.HandleExecutionMessage(new ExecutionMessage(reqId, contract, execution)));
+            _tf.StartNew(() => OrderManager.HandleExecutionMessage(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution)));
         }
 
         public virtual void commissionReport(CommissionReport commissionReport)
@@ -291,7 +293,8 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("CommissionReport. " + commissionReport.ExecId + " - " + commissionReport.Commission + " " +
                               commissionReport.Currency + " RPNL " + commissionReport.RealizedPNL + "\n");
 
-            _tf.StartNew(() => OrderManager.HandleCommissionMessage(new CommissionMessage(commissionReport)));
+            
+            _tf.StartNew(() => OrderManager.HandleCommissionMessage(commissionReport.Map<CommissionReport,CommissionMessage>()));
         }
 
         public virtual void openOrderEnd()
