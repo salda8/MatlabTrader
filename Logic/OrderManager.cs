@@ -98,26 +98,26 @@ namespace MATLAB_trader.Logic
         {
             foreach (var t in result)
             {
-                if (t.Symbol == "EUR")
-                {
-                    Matlab.EurContracts = t.Contracts;
-                }
-                else if (t.Symbol == "GBP")
-                {
-                    Matlab.GbpContracts = t.Contracts;
-                }
-                else if (t.Symbol == "JPY")
-                {
-                    Matlab.JpyContracts = t.Contracts;
-                }
-                else if (t.Symbol == "AUD")
-                {
-                    Matlab.AudContracts = t.Contracts;
-                }
-                else if (t.Symbol == "CAD")
-                {
-                    Matlab.CadContracts = t.Contracts;
-                }
+                //if (t.Symbol == "EUR")
+                //{
+                //    Matlab.EurContracts = t.Contracts;
+                //}
+                //else if (t.Symbol == "GBP")
+                //{
+                //    Matlab.GbpContracts = t.Contracts;
+                //}
+                //else if (t.Symbol == "JPY")
+                //{
+                //    Matlab.JpyContracts = t.Contracts;
+                //}
+                //else if (t.Symbol == "AUD")
+                //{
+                //    Matlab.AudContracts = t.Contracts;
+                //}
+                //else if (t.Symbol == "CAD")
+                //{
+                //    Matlab.CadContracts = t.Contracts;
+                //}
             }
         }
 

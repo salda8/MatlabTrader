@@ -1,5 +1,6 @@
 ﻿using System;
-using MySql.Data.MySqlClient;
+using System.Data.SqlClient;
+
 
 namespace MATLAB_trader.Data
 {
@@ -11,14 +12,14 @@ namespace MATLAB_trader.Data
         ///     Opens the connection.
         /// </summary>
         /// <returns></returns>
-        public static MySqlConnection OpenConnection()
+        public static SqlConnection OpenConnection()
         {
-            var connection = new MySqlConnection(ConnectionString);
+            var connection = new SqlConnection(ConnectionString);
             try
             {
                 connection.Open();
             }
-            catch (MySqlException exception)
+            catch (SqlException exception)
             {
                 Console.WriteLine(exception.Message);
             }

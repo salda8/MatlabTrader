@@ -30,10 +30,10 @@ namespace MATLAB_trader
                     "a|account=", "the {account} of someone to greet.",
                     v => account.Add(v)
                 },
-                {
-                    "m|matlab=", "the {account} of someone to greet.",
-                    v => Matlab.Matlabexe = v
-                },
+                //{
+                //    //"m|matlab=", "the {account} of someone to greet.",
+                //    ////v => Matlab.Matlabexe = v
+                //},
 
                 {
                     "h|help", "show this message and exit",
@@ -75,12 +75,12 @@ namespace MATLAB_trader
                         AccountNumber = account[i],
                         Port = port[i]
                     });
-                    Console.WriteLine("Using Account number: " + account[i] + " Port:" + port[i] +
-                                      " on this matlab function:" + Matlab.Matlabexe);
+                    //Console.WriteLine("Using Account number: " + account[i] + " Port:" + port[i] +
+                    //                  " on this matlab function:" + Matlab.Matlabexe);
                 }
             }
 
-            Matlab.StartTrading();
+            //Matlab.StartTrading();
 
             //Console.ReadKey();
             //return 0;

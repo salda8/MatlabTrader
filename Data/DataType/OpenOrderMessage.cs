@@ -28,7 +28,7 @@ namespace MATLAB_trader.Data.DataType
             OrderState = orderState.Status;
             Commissision = orderState.Commission;
             LimitPrice = order.LmtPrice;
-            Qty = order.TotalQuantity;
+            //Qty = order.TotalQuantity;
             Type = order.OrderType;
             Tif = order.Tif;
 

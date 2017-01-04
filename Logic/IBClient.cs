@@ -19,7 +19,7 @@ namespace MATLAB_trader.Logic
 
         public IbClient()
         {
-            ClientSocket = new EClientSocket(this);
+            ClientSocket = new EClientSocket(this, new EReaderMonitorSignal());
         }
 
         public EClientSocket ClientSocket { get; set; }
@@ -430,6 +430,46 @@ namespace MATLAB_trader.Logic
             var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
             var userTime = TimeZoneInfo.ConvertTimeFromUtc(dtDateTime, easternZone);
             return userTime.ToString("hh:mm:ss.fff");
+        }
+        public void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue,
+                                    double averageCost, double unrealisedPNL, double realisedPNL,
+                                    string accountName)
+        {
+        }
+        public void orderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice,
+                                int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
+        {
+        }
+        public void position(string account, Contract contract, double pos, double avgCost)
+        {
+        }
+        public void connectAck()
+        {
+        }
+        public void positionMulti(int requestId, string account, string modelCode, Contract contract, double pos,
+                                  double avgCost)
+        {
+        }
+        public void positionMultiEnd(int requestId)
+        {
+        }
+        public void accountUpdateMulti(int requestId, string account, string modelCode, string key, string value,
+                                       string currency)
+        {
+        }
+        public void accountUpdateMultiEnd(int requestId)
+        {
+        }
+        public void securityDefinitionOptionParameter(int reqId, string exchange, int underlyingConId,
+                                                      string tradingClass, string multiplier, HashSet<string> expirations,
+                                                      HashSet<double> strikes)
+        {
+        }
+        public void securityDefinitionOptionParameterEnd(int reqId)
+        {
+        }
+        public void softDollarTiers(int reqId, SoftDollarTier[] tiers)
+        {
         }
     }
 }
