@@ -12,16 +12,16 @@ namespace MATLAB_trader.Data.DataType
         {
             return new QDMS.ExecutionMessage()
             {
-                ReqId = reqId,
+                RequestId = reqId,
                 ExecutionId = execution.ExecId,
-                PermId = execution.PermId,
+                PermanentId = execution.PermId,
                 ContractSymbol = contract.Symbol,
                 ContractSecType = contract.SecType,
                 AccountNumber = execution.AcctNumber,
                 Qty = execution.CumQty,
                 Side = execution.Side,
                 OrderId = execution.OrderId,
-                Price = execution.Price,
+                Price = new decimal(execution.Price),
                 Time = DateTime.Now
             };
         }

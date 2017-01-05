@@ -262,33 +262,7 @@ namespace MATLAB_trader.Logic
 
         }
 
-        /// <summary>
-        ///     Historical trades insert query.
-        /// </summary>
-        /// <param name="historicalTrade">The historical trade.</param>
-        private static void HistoricalTradeListInsertQuery(HistoricalTrade historicalTrade)
-        {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "INSERT INTO HistoricalTrades (ExecutionId, Qty, Side, Description, Price, Commission, RealizedPnL, ExecutionTime, AccountNumber) " +
-                        "VALUES(@permId,@AccountNumber,@OrderID,@ContractSymbol,@Qty,@Side,@AvgFillPrice,@Time,@Acc)";
-                    cmd.Parameters.AddWithValue("@permId", historicalTrade.ExecutionId);
-                    cmd.Parameters.AddWithValue("@AccountNumber", historicalTrade.Quantity);
-                    cmd.Parameters.AddWithValue("@OrderID", historicalTrade.Side);
-                    cmd.Parameters.AddWithValue("@ContractSymbol", historicalTrade.Description);
-                    cmd.Parameters.AddWithValue("@Qty", historicalTrade.Price);
-                    cmd.Parameters.AddWithValue("@Side", historicalTrade.Commission);
-                    cmd.Parameters.AddWithValue("@AvgFillPrice", historicalTrade.RealizedPnL);
-                    cmd.Parameters.AddWithValue("@Time", historicalTrade.ExecTime);
-                    cmd.Parameters.AddWithValue("@Acc", historicalTrade.Account);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
+        
         /// <summary>
         ///     Handles the open order.
         /// </summary>
@@ -322,16 +296,16 @@ namespace MATLAB_trader.Logic
             {
                 using (var cmd = con.CreateCommand())
                 {
-                    cmd.CommandText =
-                        "INSERT INTO OpenOrders (PermId, AccountNumber, ContractSymbol, Status, LimitPrice, TotalQuantity) " +
-                        "VALUES(@permId,@AccountNumber,@ContractSymbol,@Qty,@Side,@AvgFillPrice)";
-                    cmd.Parameters.AddWithValue("@permId", message.PermId);
-                    cmd.Parameters.AddWithValue("@AccountNumber", message.Account);
-                    cmd.Parameters.AddWithValue("@ContractSymbol", message.ContractSymbol);
-                    cmd.Parameters.AddWithValue("@Qty", message.Status);
-                    cmd.Parameters.AddWithValue("@Side", message.LimitPrice);
-                    cmd.Parameters.AddWithValue("@AvgFillPrice", message.Qty);
-                    cmd.ExecuteNonQuery();
+                    //cmd.CommandText =
+                    //    "INSERT INTO OpenOrders (PermId, AccountNumber, ContractSymbol, Status, LimitPrice, TotalQuantity) " +
+                    //    "VALUES(@permId,@AccountNumber,@ContractSymbol,@Qty,@Side,@AvgFillPrice)";
+                    //cmd.Parameters.AddWithValue("@permId", message.PermId);
+                    //cmd.Parameters.AddWithValue("@AccountNumber", message.Account);
+                    //cmd.Parameters.AddWithValue("@ContractSymbol", message.ContractSymbol);
+                    //cmd.Parameters.AddWithValue("@Qty", message.Status);
+                    //cmd.Parameters.AddWithValue("@Side", message.LimitPrice);
+                    //cmd.Parameters.AddWithValue("@AvgFillPrice", message.Qty);
+                    //cmd.ExecuteNonQuery();
                 }
             }
         }
@@ -395,154 +369,13 @@ namespace MATLAB_trader.Logic
         /// <param name="message">The message.</param>
         public static void HandleExecutionMessage(ExecutionMessage message)
         {
-            //ExecutionMessageList.Add(message);
-            //if (ItIsFirstTradeOnAccount(message))
-            //{
-            //    var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
-            //        message.ContractSecType, message.ContractSymbol, message.Qty, message.Side, message.Price,
-            //        message.Time);
-            //    LiveTrades.Add(liveTrade);
-            //    LiveTradeInsertQuery(liveTrade);
-            //}
-            //else if (ItIsSameSideTrade(message))
-            //{
-            //    var item =
-            //        LiveTrades.LastOrDefault(
-            //            x => x.AccountNumber == message.AccountNumber && x.ContractSymbol == message.ContractSymbol);
-            //    var newFillPrice = (item.AvgFillPrice*item.Qty + message.Price*message.Qty)/(item.Qty + message.Qty);
-            //    var newQty = item.Qty + message.Qty;
-
-            //    var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
-            //        message.ContractSecType, message.ContractSymbol, newQty, message.Side, newFillPrice, message.Time);
-            //    LiveTrades.Add(liveTrade);
-            //    //LiveTradeUpdateQuery(liveTrade);
-            //    LiveTradeListDeleteQuery(message);
-            //    LiveTradeInsertQuery(liveTrade);
-            //    LiveTrades.Remove(item);
-            //}
-            //else //different side trade
-            //{
-            //    var item =
-            //        LiveTrades.LastOrDefault(
-            //            x => x.AccountNumber == message.AccountNumber && x.ContractSymbol == message.ContractSymbol);
-
-            //    if (message.Qty > item.Qty)
-            //    {
-            //        var newFillPrice = (item.AvgFillPrice*item.Qty - message.Price*message.Qty)/(item.Qty - message.Qty);
-            //        var newQty = message.Qty - item.Qty;
-            //        var liveTrade = new LiveTrade(message.PermId, message.AccountNumber, message.OrderId,
-            //            message.ContractSecType, message.ContractSymbol, newQty, message.Side, newFillPrice,
-            //            message.Time);
-            //        LiveTrades.Add(liveTrade);
-            //        LiveTradeListDeleteQuery(message);
-            //        LiveTradeInsertQuery(liveTrade);
-            //    }
-            //    else
-            //    {
-            //        LiveTradeListDeleteQuery(message);
-            //    }
-            //    LiveTrades.Remove(item);
-            //}
-
-            // Insert
+            ExecutionMessageList.Add(message);
+           
         }
 
-        /// <summary>
-        ///     Update live trade in db.
-        /// </summary>
-        /// <param name="liveTrade">The live trade.</param>
-        private static void LiveTradeUpdateQuery(LiveTrade liveTrade)
-        {
-            //using (var con = Db.OpenConnection())
-            //{
-            //    using (var cmd = con.CreateCommand())
-            //    {
-            //        cmd.CommandText =
-            //            "UPDATE livetrades SET PermId=?permId,Qty=?qty, Side=?side, AvgFillPrice=?avgFillPrice, Time=?time WHERE AccountNumber=?accountNumber AND ContractSymbol=?contractSymbol";
-            //        cmd.Parameters.AddWithValue("?permId", liveTrade.PermId);
-            //        cmd.Parameters.AddWithValue("?accountNumber", liveTrade.AccountNumber);
-            //        cmd.Parameters.AddWithValue("?orderID", liveTrade.OrderId);
-            //        cmd.Parameters.AddWithValue("?contractSymbol", liveTrade.ContractSymbol);
+       
 
-            //        cmd.Parameters.AddWithValue("?qty", liveTrade.Qty);
-            //        cmd.Parameters.AddWithValue("?side", liveTrade.Side);
-            //        cmd.Parameters.AddWithValue("?avgFillPrice", liveTrade.AvgFillPrice);
-            //        cmd.Parameters.AddWithValue("?time", liveTrade.Time);
-            //        cmd.ExecuteNonQuery();
-            //    }
-            //}
-        }
-
-        /// <summary>
-        ///     Inserts live trade in db.
-        /// </summary>
-        /// <param name="liveTrade">The live trade.</param>
-        private static void LiveTradeInsertQuery(LiveTrade liveTrade)
-        {
-            //using (var con = Db.OpenConnection())
-            //{
-            //    using (var cmd = con.CreateCommand())
-            //    {
-            //        cmd.CommandText =
-            //            "INSERT INTO LiveTrades (PermId, AccountNumber, OrderID, ContractSymbol, Qty, Side, AvgFillPrice, Time) " +
-            //            "VALUES(@permId,@AccountNumber,@OrderID,@ContractSymbol,@Qty,@Side,@AvgFillPrice,@Time)";
-            //        cmd.Parameters.AddWithValue("@permId", liveTrade.PermId);
-            //        cmd.Parameters.AddWithValue("@AccountNumber", liveTrade.AccountNumber);
-            //        cmd.Parameters.AddWithValue("@OrderID", liveTrade.OrderId);
-            //        cmd.Parameters.AddWithValue("@ContractSymbol", liveTrade.ContractSymbol);
-            //        cmd.Parameters.AddWithValue("@Qty", liveTrade.Qty);
-            //        cmd.Parameters.AddWithValue("@Side", liveTrade.Side);
-            //        cmd.Parameters.AddWithValue("@AvgFillPrice", liveTrade.AvgFillPrice);
-            //        cmd.Parameters.AddWithValue("@Time", liveTrade.Time);
-            //        cmd.ExecuteNonQuery();
-            //    }
-            //}
-        }
-
-        /// <summary>
-        ///     Check if the same side trade exist.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <returns></returns>
-        private static bool ItIsSameSideTrade(ExecutionMessage message)
-        {
-           return LiveTrades.Any(
-                x =>
-                    x.TradeDirection == ConvertFromString(message.Side) &&
-                    x.Instrument.SymbolForOrders==message.ContractSymbol);
-          
-        }
-
-        /// <summary>
-        ///     Check if on same account and same contract exists any trade.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <returns></returns>
-        private static bool ItIsFirstTradeOnAccount(ExecutionMessage message)
-        {
-           return
-                LiveTrades.Any(
-                     x=>x.Instrument.SymbolForOrders == message.ContractSymbol);
-        }
-
-        /// <summary>
-        ///     Lives the trade list delete query.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        private static void LiveTradeListDeleteQuery(ExecutionMessage message)
-        {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "DELETE FROM LiveTrades WHERE AccountNumber = ?AccountNumber AND ContractSymbol=?symbol";
-                    cmd.Parameters.AddWithValue("?AccountNumber", message.AccountNumber);
-                    cmd.Parameters.AddWithValue("?symbol", message.ContractSymbol);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
+        
 
         //private void OpenOrderCheck(ExecutionMessage message)
         //{
