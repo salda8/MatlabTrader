@@ -1,5 +1,4 @@
 using System;
-using System.Collections.ObjectModel;
 using IBApi;
 using QDMS;
 
@@ -7,18 +6,17 @@ namespace MATLAB_trader.Data.DataType
 {
     public static class ObjectContructorHelper
     {
-        public static QDMS.ExecutionMessage GetExecutionMessage(int reqId, Contract contract,
+        public static ExecutionMessage GetExecutionMessage(int reqId, Contract contract,
                                                          Execution execution)
         {
-            return new QDMS.ExecutionMessage()
-            {
+            return new ExecutionMessage
+                   {
                 RequestId = reqId,
                 ExecutionId = execution.ExecId,
                 PermanentId = execution.PermId,
-                ContractSymbol = contract.Symbol,
-                ContractSecType = contract.SecType,
-                AccountNumber = execution.AcctNumber,
-                Qty = execution.CumQty,
+                InstrumentID = GetInstrumentId(contract.Symbol),
+                AccountID = Program.AccountID,
+                Quantity = execution.CumQty,
                 Side = execution.Side,
                 OrderId = execution.OrderId,
                 Price = new decimal(execution.Price),
@@ -26,23 +24,44 @@ namespace MATLAB_trader.Data.DataType
             };
         }
 
-        public static QDMS.OpenOrder GetOpenOrder(Contract contract, Order order, OrderState orderState)
+        public static OpenOrder GetOpenOrder(Contract contract, Order order, OrderState orderState)
         {
-            return new OpenOrder()
+            return new OpenOrder
                    {
-                
-                       PermId = order.PermId,
+                PermanentId = order.PermId,
                        AccountID = Program.AccountID,
-                        InstrumentID = 1,//todo
+                        InstrumentID = GetInstrumentId(contract.LocalSymbol),
                         Status = orderState.Status,
-                     
-                       LimitPrice = (decimal) order.LmtPrice,
-                       Position = (decimal) order.TotalQuantity,
+                     LimitPrice = (decimal) order.LmtPrice,
+                       Quantity = (decimal) order.TotalQuantity,
                        Type = order.OrderType
                        
                    };
 
           
+        }
+
+        public static OrderStatusMessage GetOrderStatusMessage(int orderId, string status, int filled, int remaining, double averageFillPrice,
+            int permanentId, int parentId, double lastFillPrice, int clientId, string whyHeld)
+        {
+            return new OrderStatusMessage
+            { 
+                       OrderId = orderId,
+                       Status = status,
+                       Filled = filled,
+                       Remaining = remaining,
+                       AverageFillPrice = new decimal(averageFillPrice),
+                       PermanentId = permanentId,
+                       ParentId = parentId,
+                       LastFillPrice = new decimal(lastFillPrice),
+                       ClientId = clientId,
+                       WhyHeld = whyHeld
+                   };
+        }
+
+        private static int GetInstrumentId(string srcDescription)
+        {
+            return 1;
         }
     }
 }

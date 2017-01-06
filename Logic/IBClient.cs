@@ -17,7 +17,7 @@ namespace MATLAB_trader.Logic
         public static bool Firstime = true;
         public static double LastPrice;
         public static DateTimeOffset Time;
-        private readonly TaskFactory _tf = new TaskFactory();
+        private readonly TaskFactory tf = new TaskFactory();
 
         public IbClient()
         {
@@ -43,7 +43,7 @@ namespace MATLAB_trader.Logic
         public virtual void error(int id, int errorCode, string errorMsg)
         {
             Console.WriteLine("Error. Id: " + id + ", Code: " + errorCode + ", Msg: " + errorMsg + "\n");
-            _tf.StartNew(() => OrderManager.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
+            tf.StartNew(() => OrderManager.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
         }
 
         public virtual void realtimeBar(int reqId, long time, double open, double high, double low, double close,
@@ -224,7 +224,7 @@ namespace MATLAB_trader.Logic
                     if (key == "NetLiquidation") Equity = Convert.ToDouble(value);
                 }
 
-                _tf.StartNew((() => OrderManager.HandleAccountUpdate(accountName, key, value)));
+                tf.StartNew((() => OrderManager.HandleAccountUpdate(accountName, key, value)));
             }
         }
 
@@ -235,15 +235,14 @@ namespace MATLAB_trader.Logic
             {
                 Console.WriteLine("UpdatePortfolio. " + contract.Symbol + ", " + contract.SecType + " @ " +
                                   contract.Exchange
-                                  + ": Position: " + position + ", MarketPrice: " + marketPrice + ", MarketValue: " +
-                                  marketValue + ", AverageCost: " + averageCost
+                                  + ": Quantity: " + position + ", MarketPrice: " + marketPrice + ", MarketValue: " +
+                                  marketValue + ", AveragePrice: " + averageCost
                                   + ", UnrealisedPNL: " + unrealisedPnl + ", RealisedPNL: " + realisedPnl +
                                   ", AccountName: " + accountName + "\n");
-                _tf.StartNew(
+                tf.StartNew(
                     (() =>
-                        OrderManager.HandlePortfolioUpdate(accountName, contract.Symbol + " " + contract.SecType,
-                            position,
-                            marketPrice, marketValue, averageCost, realisedPnl, unrealisedPnl)));
+                        OrderManager.HandlePortfolioUpdate(accountName, contract.Symbol, position,
+                        marketPrice, marketValue, averageCost, realisedPnl, unrealisedPnl)));
             }
         }
 
@@ -262,14 +261,11 @@ namespace MATLAB_trader.Logic
         {
             Console.WriteLine("OrderStatus. Id: " + orderId + ", Status: " + status + ", Filled" + filled +
                               ", Remaining: " + remaining
-                              + ", AvgFillPrice: " + avgFillPrice + ", PermId: " + permId + ", ParentId: " + parentId +
+                              + ", AverageFillPrice: " + avgFillPrice + ", PermanentId: " + permId + ", ParentId: " + parentId +
                               ", LastFillPrice: " + lastFillPrice + ", ClientId: " + clientId + ", WhyHeld: " + whyHeld +
                               "\n");
-            _tf.StartNew(
-                () =>
-                    OrderManager.HandleOrderStatus(new OrderStatusMessage(orderId, status, filled, remaining,
-                        avgFillPrice,
-                        permId, parentId, lastFillPrice, clientId, whyHeld)));
+            tf.StartNew(() => OrderManager.HandleOrderStatus(ObjectContructorHelper.GetOrderStatusMessage(orderId, status, filled, remaining,
+                        avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld)));
         }
 
         public virtual void openOrder(int orderId, Contract contract, Order order, OrderState orderState)
@@ -277,7 +273,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("OpenOrder. ID: " + orderId + ", " + contract.Symbol + ", " + contract.SecType + " @ " +
                               contract.Exchange + ": " + order.Action + ", " + order.OrderType + " " +
                               order.TotalQuantity + ", " + orderState.Status + "\n");
-            _tf.StartNew(() => OrderManager.HandleOpenOrder(ObjectContructorHelper.GetOpenOrder(contract, order, orderState)));
+            tf.StartNew(() => OrderManager.HandleOpenOrder(ObjectContructorHelper.GetOpenOrder(contract, order, orderState)));
         }
 
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
@@ -285,7 +281,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("ExecDetails. " + reqId + " - " + contract.Symbol + ", " + contract.SecType + ", " +
                               contract.Currency + " - " + execution.ExecId + ", " + execution.OrderId + ", " +
                               execution.Shares + "\n");
-            _tf.StartNew(() => OrderManager.HandleExecutionMessage(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution)));
+            tf.StartNew(() => OrderManager.HandleExecutionMessage(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution)));
         }
 
         public virtual void commissionReport(CommissionReport commissionReport)
@@ -294,7 +290,7 @@ namespace MATLAB_trader.Logic
                               commissionReport.Currency + " RPNL " + commissionReport.RealizedPNL + "\n");
 
             
-            _tf.StartNew(() => OrderManager.HandleCommissionMessage(commissionReport.Map<CommissionReport,CommissionMessage>()));
+            tf.StartNew(() => OrderManager.HandleCommissionMessage(commissionReport.Map<CommissionReport,CommissionMessage>()));
         }
 
         public virtual void openOrderEnd()
@@ -331,14 +327,14 @@ namespace MATLAB_trader.Logic
 
         public virtual void updateMktDepth(int tickerId, int position, int operation, int side, double price, int size)
         {
-            Console.WriteLine("UpdateMarketDepth. " + tickerId + " - Position: " + position + ", Operation: " +
+            Console.WriteLine("UpdateMarketDepth. " + tickerId + " - Quantity: " + position + ", Operation: " +
                               operation + ", Side: " + side + ", Price: " + price + ", Size" + size + "\n");
         }
 
         public virtual void updateMktDepthL2(int tickerId, int position, string marketMaker, int operation, int side,
             double price, int size)
         {
-            Console.WriteLine("UpdateMarketDepthL2. " + tickerId + " - Position: " + position + ", Operation: " +
+            Console.WriteLine("UpdateMarketDepthL2. " + tickerId + " - Quantity: " + position + ", Operation: " +
                               operation + ", Side: " + side + ", Price: " + price + ", Size" + size + "\n");
         }
 
@@ -350,8 +346,8 @@ namespace MATLAB_trader.Logic
 
         public virtual void position(string account, Contract contract, int pos, double avgCost)
         {
-            Console.WriteLine("Position. " + account + " - Symbol: " + contract.Symbol + ", SecType: " +
-                              contract.SecType + ", Currency: " + contract.Currency + ", Position: " + pos +
+            Console.WriteLine("Quantity. " + account + " - Symbol: " + contract.Symbol + ", SecType: " +
+                              contract.SecType + ", Currency: " + contract.Currency + ", Quantity: " + pos +
                               ", Avg cost: " + avgCost + "\n");
         }
 

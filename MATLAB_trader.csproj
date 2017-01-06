@@ -65,17 +65,10 @@
   <ItemGroup>
     <Compile Include="Common\Tools.cs" />
     <Compile Include="Data\Data.cs" />
-    <Compile Include="Data\DataType\BarData2.cs" />
     <Compile Include="Data\DataType\ObjectContructorHelper.cs" />
     <Compile Include="Data\DataType\HighResolutionDateTime.cs" />
-    <Compile Include="Data\DataType\HistoricalTrade.cs" />
-    <Compile Include="Data\DataType\LiveTrade.cs" />
     <Compile Include="Data\DataType\MinuteBar.cs" />
-    <Compile Include="Data\DataType\OpenOrderMessage.cs" />
-    <Compile Include="Data\DataType\OrderStatusMessage.cs" />
-    <Compile Include="Data\DataType\OrderStatusOpenOrderJoin.cs" />
     <Compile Include="Data\DataType\Portfolio.cs" />
-    <Compile Include="Data\DataType\TickMessage.cs" />
     <Compile Include="Data\Db.cs" />
     <Compile Include="Data\MyContracts.cs" />
     <Compile Include="Logic\IBClient.cs" />
@@ -84,6 +77,9 @@
     <Compile Include="Logic\Trade.cs" />
     <Compile Include="Logic\TradingCalendar.cs" />
     <Compile Include="MappingConfiguration.cs" />
+    <Compile Include="MatlabParameters.cs" />
+    <Compile Include="MatlabType.cs" />
+    <Compile Include="MatlabValue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

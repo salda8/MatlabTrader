@@ -12,10 +12,6 @@ namespace MATLAB_trader.Logic
     public class OrderManager
     {
         private static readonly TaskFactory Tf = new TaskFactory(TaskScheduler.Default);
-        private static List<OpenOrder> OpenOrderMessageList= new List<OpenOrder>();
-        private static List<ExecutionMessage> ExecutionMessageList= new List<ExecutionMessage>();
-        private static List<LiveTrade> LiveTrades= new List<LiveTrade>();
-
         #region DatabaseInteraction
 
         /// <summary>
@@ -269,46 +265,12 @@ namespace MATLAB_trader.Logic
         /// <param name="message">The message.</param>
         public static void HandleOpenOrder(OpenOrder message)
         {
-            if (message.Status == "Submitted")
-            {
-                OpenOrderMessageList.Add(message);
-                OpenOrderListInsertQuery(message);
-            }
-            else if (message.Status == "Cancelled")
-            {
-                CheckSubmittedOrders(message);
-            }
-            else if (message.Status == "Filled")
-            {
-                CheckSubmittedOrders(message);
-            }
+            
 
             //_allOpenPositionGrid.ItemsSource = MainWindow.OpenOrderMessageList;
         }
 
-        /// <summary>
-        ///     Opens the order list insert query.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        private static void OpenOrderListInsertQuery(OpenOrder message)
-        {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    //cmd.CommandText =
-                    //    "INSERT INTO OpenOrders (PermId, AccountNumber, ContractSymbol, Status, LimitPrice, TotalQuantity) " +
-                    //    "VALUES(@permId,@AccountNumber,@ContractSymbol,@Qty,@Side,@AvgFillPrice)";
-                    //cmd.Parameters.AddWithValue("@permId", message.PermId);
-                    //cmd.Parameters.AddWithValue("@AccountNumber", message.Account);
-                    //cmd.Parameters.AddWithValue("@ContractSymbol", message.ContractSymbol);
-                    //cmd.Parameters.AddWithValue("@Qty", message.Status);
-                    //cmd.Parameters.AddWithValue("@Side", message.LimitPrice);
-                    //cmd.Parameters.AddWithValue("@AvgFillPrice", message.Qty);
-                    //cmd.ExecuteNonQuery();
-                }
-            }
-        }
+        
 
         //comes with OpenOrder
         /// <summary>
@@ -317,50 +279,9 @@ namespace MATLAB_trader.Logic
         /// <param name="message">The message.</param>
         public static void HandleOrderStatus(OrderStatusMessage message)
         {
-            if (message.Status.ToUpper() == "CANCELLED" || message.Status.ToUpper() == "FILLED")
-            {
-                CheckSubmittedOrders(message);
-            }
+           
         }
-
-        /// <summary>
-        ///     Checks the submitted orders.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        private static void CheckSubmittedOrders(OrderStatusMessage message)
-        {
-            var item = OpenOrderMessageList.FindIndex(x => x.PermId == message.PermId);
-            if (item == -1) return;
-           OpenOrderMessageList.RemoveAt(item);
-            OpenOrderListDeleteQuery(OpenOrderMessageList[item].PermId);
-        }
-
-        /// <summary>
-        ///     Checks the submitted orders.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        public static void CheckSubmittedOrders(OpenOrder message)
-        {
-            var item = OpenOrderMessageList.FindIndex(x => x.PermId == message.PermId);
-            if (item == -1) return;
-            OpenOrderMessageList.RemoveAt(item);
-            OpenOrderListDeleteQuery(OpenOrderMessageList[item].PermId);
-        }
-
-        /// <summary>
-        ///     delete query.
-        /// </summary>
-        /// <param name="permId">The perm identifier.</param>
-        private static void OpenOrderListDeleteQuery(int permId)
-        {
-            //var con = Db.OpenConnection();
-            //var cmd = con.CreateCommand();
-            //cmd.CommandText =
-            //    "DELETE FROM OpenOrder" + "WHERE PermID=@PermID";
-            //cmd.Parameters.AddWithValue("@PermID", permId);
-            //cmd.ExecuteNonQuery();
-            //con.Close();
-        }
+        
 
         /// <summary>
         ///     Handles the execution message.
@@ -369,23 +290,11 @@ namespace MATLAB_trader.Logic
         /// <param name="message">The message.</param>
         public static void HandleExecutionMessage(ExecutionMessage message)
         {
-            ExecutionMessageList.Add(message);
+            
            
         }
 
-       
-
-        
-
-        //private void OpenOrderCheck(ExecutionMessage message)
-        //{
-        //    //var item =
-        //    //    MainWindow.OrderStatusOpenOrderJoinList.SingleOrDefault(x => x.PermID == message.PermId);
-        //    //if (item == null) return;
-        //    //MainWindow.OrderStatusOpenOrderJoinList.Remove(item);
-        //}
-
-        /// <summary>
+       /// <summary>
         ///     Handles the portfolio update.
         /// </summary>
         /// <param name="accountName">Name of the account.</param>
@@ -404,7 +313,7 @@ namespace MATLAB_trader.Logic
                 using (var cmd = con.CreateCommand())
                 {
                     cmd.CommandText =
-                        "INSERT Portfolio (Symbol,Position,MarketPrice,MarketValue,AverageCost,UnrealizedPnL,RealizedPnL, Account,Updatetime) " +
+                        "INSERT Portfolio (Symbol,Quantity,MarketPrice,MarketValue,AveragePrice,UnrealizedPnL,RealizedPnL, Account,Updatetime) " +
                         "VALUES (?symbol,?pos,?mp,?mv,?ac,?upnl,?rpnl, ?acc,?time)";
                     cmd.Parameters.AddWithValue("?symbol", s);
                     cmd.Parameters.AddWithValue("?pos", position);
@@ -441,7 +350,7 @@ namespace MATLAB_trader.Logic
                 using (var cmd = con.CreateCommand())
                 {
                     cmd.CommandText =
-                        "UPDATE Portfolio SET Symbol=?symbol,Position=?pos,MarketPrice=?mp,MarketValue=?mv,AverageCost=?ac,UnrealizedPnL=?upnl,RealizedPnL=?rpnl,Updatetime=?time " +
+                        "UPDATE Portfolio SET Symbol=?symbol,Quantity=?pos,MarketPrice=?mp,MarketValue=?mv,AveragePrice=?ac,UnrealizedPnL=?upnl,RealizedPnL=?rpnl,Updatetime=?time " +
                         "WHERE Symbol=?symbol AND Account=?acc";
                     cmd.Parameters.AddWithValue("?symbol", symbol);
                     cmd.Parameters.AddWithValue("?pos", position);
@@ -492,11 +401,11 @@ namespace MATLAB_trader.Logic
         //                    OpenOrderMessageList.Add(new OpenOrder
         //                    {
         //                        Account = reader.GetString(6),
-        //                        PermId = reader.GetInt32(1),
+        //                        PermanentId = reader.GetInt32(1),
         //                        ContractSymbol = reader.GetString(2),
         //                        Status = reader.GetString(3),
         //                        LimitPrice = reader.GetDouble(4),
-        //                        Qty = reader.GetInt16(5),
+        //                        Quantity = reader.GetInt16(5),
         //                        Side = reader.GetString(7),
         //                        Type = reader.GetString(9),
         //                        Tif = reader.GetString(10)

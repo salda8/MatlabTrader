@@ -6,10 +6,8 @@ namespace MATLAB_trader.Data
 {
     internal class Data
     {
-        public static List<Tick> TickList = new List<Tick>();
-        public static double LastPrice;
         public static List<MinuteBar> BarList = new List<MinuteBar>();
-        public static List<BarData2> BarListData2 = new List<BarData2>();
+      
         public static List<string> SymbolsList = new List<string> {"E6", "B6", "J6", "A6", "D6"};
 
         public static List<BarSettings> BarSettings = new List<BarSettings>
@@ -172,27 +170,7 @@ namespace MATLAB_trader.Data
             return check;
         }
 
-        /// <summary>
-        ///     Reqs the request data2 list.
-        /// </summary>
-        /// <param name="list">The list.</param>
-        /// <param name="period">The period.</param>
-        /// <returns></returns>
-        public static List<BarData2> RequestData2List(List<BarData2> list, int period)
-        {
-            var y = list.Count - period;
-
-            var bar = new List<BarData2>();
-
-            var x = 0;
-            while (x < period)
-            {
-                bar.Add(list[y + x]);
-                x++;
-            }
-
-            return bar;
-        }
+        
     }
 
     public class AccountSettings
