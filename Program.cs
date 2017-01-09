@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using IBApi;
@@ -7,12 +9,15 @@ using MATLAB_trader.Data;
 using MATLAB_trader.Data.DataType;
 using MATLAB_trader.Logic;
 using NDesk.Options;
+using NetMQ;
+using NetMQ.Sockets;
+using QDMS;
 
 namespace MATLAB_trader
 {
     public class Program
     {
-        public static int AccountID;
+        public static int AccountID=1;
         private static IbClient wrapper;
 
         public static void Main(string[] args)
@@ -97,25 +102,11 @@ namespace MATLAB_trader
         public static void StartTrading()
         {
 
-            //var wrapper = new IbClient();
-            //wrapper.ClientSocket.eConnect("127.0.0.1", 7496, 1, false);
-            //wrapper.AccountNumber = "DU15025";
-            //Program.AccountID = 3;
-            ////while (wrapper.NextOrderId <= 0)
-            ////{
-            ////}
-            //wrapper.ClientSocket.reqAccountUpdates(true, wrapper.AccountNumber);
-            //IbClient.WrapperList.Add(wrapper);
-
             ConnectToIb();
-
+            Task.Factory.StartNew(StartServerToUpdateEquity);
             Thread.Sleep(1000);
 
-
-
             // var ml = new Matlab();
-
-
 
             while (true)
             {
@@ -134,6 +125,31 @@ namespace MATLAB_trader
             }
         }
 
+        private static void StartServerToUpdateEquity()
+        {
+            using (var sender = new DealerSocket())
+            {
+                sender.Connect("tcp://127.0.0.1:5556");
+                while (true)
+                {
+                    var message = new NetMQMessage();
+                    message.Append(Program.AccountID);
+                    sender.SendMultipartMessage(message);
+                    Console.WriteLine("Sent request");
+                   
+                    var receiveFrameBytes = sender.ReceiveMultipartMessage();
+                    using (var ms = new MemoryStream())
+                    {
+                        var equity = MyUtils.ProtoBufDeserialize<Equity>(receiveFrameBytes[0].Buffer, ms);
+                        Console.WriteLine($"Equity: {equity.Value}");
+                    }
+
+
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
+                }
+            }
+        }
+
         private static void ConnectToIb()
         {
             wrapper = new IbClient();
@@ -143,8 +159,7 @@ namespace MATLAB_trader
             clientSocket.eConnect("127.0.0.1", 7496, 0);
             clientSocket.reqAllOpenOrders();
             clientSocket.reqPositions();
-            clientSocket.reqAccountUpdates(true, "DU15213");
-
+          
             //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
             var reader = new EReader(clientSocket, readerSignal);
             reader.Start();
