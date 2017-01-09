@@ -21,7 +21,7 @@ namespace MATLAB_trader.Data
         /// <param name="localSymbol">The local symbol.</param>
         /// <returns></returns>
         public static Contract Contract(string symbol = "GC", string secType = "FUT", string currency = "USD",
-            string exchange = "NYMEX", string localSymbol = "GCQ5")
+            string exchange = "NYMEX", string localSymbol = "OGM1 C1195")
         {
             var contract = new Contract
             {

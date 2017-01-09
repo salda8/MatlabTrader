@@ -6,7 +6,7 @@ namespace MATLAB_trader.Data
 {
     public class Db
     {
-        public static string ConnectionString = @"server=localhost;userid=salda;password=saldik;database=Data";
+        public static string ConnectionString = @"(localdb)\MSSQLLocalDB";
 
         /// <summary>
         ///     Opens the connection.

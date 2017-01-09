@@ -22,72 +22,8 @@ namespace MATLAB_trader.Logic
         /// <param name="value">The value.</param>
         public static void HandleAccountUpdate(string accountName, string key, string value)
         {
-            if (value == accountName) return;
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    var doubleValue = Convert.ToDouble(value);
-
-                    switch (key)
-                    {
-                        case "NetLiquidation":
-                            cmd.CommandText =
-                                "UPDATE AccountSummary SET NetLiquidation=?doubleValue, Updatetime=?time " +
-                                "WHERE AccountNumber=?acc";
-
-                            Tf.StartNew(() => HandleEquityUpdate(accountName, doubleValue));
-                            Tf.StartNew(() => HandleNetLiquidationAccountUpdate(key, doubleValue, accountName));
-                            break;
-
-                        case "CashBalance":
-                            cmd.CommandText =
-                                "UPDATE AccountSummary SET CashBalance=?doubleValue, Updatetime=?time " +
-                                "WHERE AccountNumber=?acc";
-                            break;
-
-                        case "DayTradesRemaining":
-                            cmd.CommandText =
-                                "UPDATE AccountSummary SET DayTradesRemaining=?doubleValue, Updatetime=?time " +
-                                "WHERE AccountNumber=?acc";
-                            break;
-
-                        case "EquityWithLoanValue":
-                            cmd.CommandText =
-                                "UPDATE AccountSummary SET EquityWithLoanValue=?doubleValue, Updatetime=?time " +
-                                "WHERE AccountNumber=?acc";
-                            break;
-
-                        case "InitMarginReq":
-                            cmd.CommandText =
-                                "UPDATE AccountSummary SET InitMarginReq=?doubleValue, Updatetime=?time " +
-                                "WHERE AccountNumber=?acc";
-                            break;
-
-                        case "MaintMarginReq":
-                            cmd.CommandText =
-                                "UPDATE AccountSummary SET MaintMarginReq=?doubleValue, Updatetime=?time " +
-                                "WHERE AccountNumber=?acc";
-                            break;
-
-                        case "UnrealizedPnL":
-                            cmd.CommandText =
-                                "UPDATE AccountSummary SET UnrealisedPnL=?doubleValue, Updatetime=?time " +
-                                "WHERE AccountNumber=?acc";
-                            break;
-                    }
-                    cmd.Parameters.AddWithValue("?acc", accountName);
-                    cmd.Parameters.AddWithValue("?time", DateTime.Now);
-                    cmd.Parameters.AddWithValue("?doubleValue", doubleValue);
-
-                    var result = cmd.ExecuteNonQuery();
-
-                    if (result == 0)
-                    {
-                        HandleAccountInsert(accountName, key, doubleValue);
-                    }
-                }
-            }
+          
+            
         }
 
         /// <summary>
@@ -186,19 +122,7 @@ namespace MATLAB_trader.Logic
         /// <param name="value">The value.</param>
         private static void HandleEquityUpdate(string accountName, double value)
         {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "INSERT INTO Equity (AccountNumber, Updatetime, Value) " +
-                        "VALUES (?acc, ?time,?value) ";
-                    cmd.Parameters.AddWithValue("?acc", accountName);
-                    cmd.Parameters.AddWithValue("?time", DateTime.Now);
-                    cmd.Parameters.AddWithValue("?value", value);
-                    var result = cmd.ExecuteNonQuery();
-                }
-            }
+            
         }
 
         /// <summary>
@@ -231,21 +155,10 @@ namespace MATLAB_trader.Logic
         /// <param name="accountName"></param>
         public static void HandleNetLiquidationAccountUpdate(string key, double value, string accountName)
         {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "UPDATE Portfolio SET NetLiquidation=?value WHERE Account=?acc";
-                    cmd.Parameters.AddWithValue("?value", value);
-                    cmd.Parameters.AddWithValue("?acc", accountName);
-
-                    cmd.ExecuteNonQuery();
-                }
-            }
+           
         }
 
-        public static TradeDirection ConvertFromString(string side) => side=="SLD"? TradeDirection.Long : TradeDirection.Short;
+        public static TradeDirection ConvertFromString(string side) => side=="BUY"? TradeDirection.Long : TradeDirection.Short;
 
         /// <summary>
         ///     Handles the commission message.
@@ -253,8 +166,7 @@ namespace MATLAB_trader.Logic
         /// <param name="message">The message.</param>
         public static void HandleCommissionMessage(CommissionMessage message)
         {
-            //todo "creating" HistoryTrade should not be handling this App. Overview app or server. Just add both messages to database.
-            if (message.RealizedPnL > 100000000) return;
+           
 
         }
 
@@ -265,9 +177,7 @@ namespace MATLAB_trader.Logic
         /// <param name="message">The message.</param>
         public static void HandleOpenOrder(OpenOrder message)
         {
-            
 
-            //_allOpenPositionGrid.ItemsSource = MainWindow.OpenOrderMessageList;
         }
 
         

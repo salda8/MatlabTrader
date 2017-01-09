@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using IBApi;
 
@@ -8,6 +9,16 @@ namespace MATLAB_trader.Logic
     {
         private static readonly Random R = new Random();
         private readonly string _account;
+        private static readonly Contract futureComboContract = new Contract
+        {
+            Symbol = "ES",
+            SecType = "FUT",
+            Exchange = "GLOBEX",
+            Currency = "USD",
+            LastTradeDateOrContractMonth = "201703"
+        };
+
+        
 
         /// <summary>
         ///     Trades the specified contract.
@@ -19,17 +30,27 @@ namespace MATLAB_trader.Logic
         {
             if (i >= 1)
             {
-                MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
+                MakeLmtTrade(wrapper);
                 Thread.Sleep(10000);
                 MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
                 Thread.Sleep(10000);
+                MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
+                Thread.Sleep(10000);
+                wrapper.ClientSocket.reqGlobalCancel();
+
+
             }
             else if (i <= -1)
             {
+                MakeLmtTrade(wrapper);
+                Thread.Sleep(10000);
                 MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
                 Thread.Sleep(10000);
                 MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
                 Thread.Sleep(10000);
+                wrapper.ClientSocket.reqGlobalCancel();
+
+
             }
         }
 
@@ -45,12 +66,13 @@ namespace MATLAB_trader.Logic
                 Tif = "GTC"
             };
 
-            wrapper.ClientSocket.placeOrder(order.OrderId, contract, order);
+            wrapper.ClientSocket.placeOrder(order.OrderId, FutureComboContract(), order);
             //Thread.Sleep(5000);
         }
+        public static Contract FutureComboContract() => futureComboContract;
 
-        public static void MakeLmtTrade(Contract contract, string direction, string type, int quantity, double price,
-            IbClient wrapper)
+        public static void MakeLmtTrade( 
+            IbClient wrapper, double price=3000, Contract contract=null, int quantity=1, string direction="SELL", string type= "LMT")
         {
             var order = new Order
             {
@@ -63,7 +85,7 @@ namespace MATLAB_trader.Logic
                 Tif = "GTC"
             };
 
-            wrapper.ClientSocket.placeOrder(order.OrderId, contract, order);
+            wrapper.ClientSocket.placeOrder(order.OrderId, (contract ?? futureComboContract), order);
         }
     }
 }

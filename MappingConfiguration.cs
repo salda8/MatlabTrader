@@ -27,17 +27,14 @@ namespace MATLAB_trader
             //       .Member(dest => dest.ExecTime, src => src.ExecTime);
 
             Mapper.Register<CommissionReport, CommissionMessage>()
-                  .Member(dest => dest.Commission, src => Convert.ToDecimal(src.Commission))
+                  .Member(dest => dest.Commission, src => new decimal(src.Commission))
                   .Member(dest => dest.ExecutionId, src => src.ExecId)
-                  .Member(dest => dest.RealizedPnL, src => src.RealizedPNL);
+                  .Member(dest => dest.RealizedPnL, src => src.RealizedPNL > 100000000 ? 100000000 : src.RealizedPNL);
 
             
                 
             Mapper.Compile();
         }
-        private static int GetInstrumentId(string srcDescription)
-        {
-            return 1;
-        }
+        
     }
 }

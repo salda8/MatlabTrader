@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using ExpressMapper.Extensions;
 using IBApi;
@@ -18,13 +19,23 @@ namespace MATLAB_trader.Logic
         public static double LastPrice;
         public static DateTimeOffset Time;
         private readonly TaskFactory tf = new TaskFactory();
+        private EReaderMonitorSignal signal;
 
         public IbClient()
         {
-            ClientSocket = new EClientSocket(this, new EReaderMonitorSignal());
+            Signal = new EReaderMonitorSignal();
+            ClientSocket = new EClientSocket(this, Signal);
         }
 
         public EClientSocket ClientSocket { get; set; }
+
+        public EReaderMonitorSignal Signal
+        {
+            get { return signal; }
+            set { signal = value; }
+        }
+
+        
         public int NextOrderId { get; set; }
         public string AccountNumber { get; set; }
         public double Equity { get; set; }
@@ -43,7 +54,7 @@ namespace MATLAB_trader.Logic
         public virtual void error(int id, int errorCode, string errorMsg)
         {
             Console.WriteLine("Error. Id: " + id + ", Code: " + errorCode + ", Msg: " + errorMsg + "\n");
-            tf.StartNew(() => OrderManager.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
+           // tf.StartNew(() => OrderManager.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
         }
 
         public virtual void realtimeBar(int reqId, long time, double open, double high, double low, double close,
@@ -185,7 +196,15 @@ namespace MATLAB_trader.Logic
         public virtual void deltaNeutralValidation(int reqId, UnderComp underComp)
         {
         }
+        public virtual void updateAccountTime(string timestamp)
+        {
+            //Console.WriteLine("UpdateAccountTime. Time: " + timestamp + "\n");
+        }
 
+        public virtual void accountDownloadEnd(string account)
+        {
+            Console.WriteLine("Account download finished: " + account + "\n");
+        }
         public virtual void managedAccounts(string accountsList)
         {
             Console.WriteLine("Account list: " + accountsList + "\n");
@@ -209,8 +228,14 @@ namespace MATLAB_trader.Logic
 
         public virtual void updateAccountValue(string key, string value, string currency, string accountName)
         {
-            //Console.WriteLine("UpdateAccountValue. Key: " + key + ", Value: " + value + ", Currency: " + currency +
-            //                  ", AccountName: " + accountName + "\n");
+            Console.WriteLine("UpdateAccountValue. Key: " + key + ", Value: " + value + ", Currency: " + currency +
+                              ", AccountName: " + accountName + "\n");
+            NumberFormatInfo provider = new NumberFormatInfo
+            {
+                NumberDecimalSeparator = ",",
+                NumberGroupSeparator = ".",
+                NumberGroupSizes = new int[] {3}
+            };
 
             if ((key == "NetLiquidation" || key == "CashBalance" || key == "DayTradesRemaining" ||
                  key == "EquityWithLoanValue" || key == "InitMarginReq" || key == "MaintMarginReq"
@@ -221,10 +246,10 @@ namespace MATLAB_trader.Logic
                     Console.WriteLine("UpdateAccountValue. Key: " + key + ", Value: " + value + ", Currency: " +
                                       currency +
                                       ", AccountName: " + accountName + "\n");
-                    if (key == "NetLiquidation") Equity = Convert.ToDouble(value);
+                    if (key == "NetLiquidation") Equity = Convert.ToDouble(value, provider);
                 }
 
-                tf.StartNew((() => OrderManager.HandleAccountUpdate(accountName, key, value)));
+               // tf.StartNew((() => OrderManager.HandleAccountUpdate(accountName, key, value)));
             }
         }
 
@@ -239,22 +264,14 @@ namespace MATLAB_trader.Logic
                                   marketValue + ", AveragePrice: " + averageCost
                                   + ", UnrealisedPNL: " + unrealisedPnl + ", RealisedPNL: " + realisedPnl +
                                   ", AccountName: " + accountName + "\n");
-                tf.StartNew(
-                    (() =>
-                        OrderManager.HandlePortfolioUpdate(accountName, contract.Symbol, position,
-                        marketPrice, marketValue, averageCost, realisedPnl, unrealisedPnl)));
+                //tf.StartNew(
+                //    (() =>
+                //        OrderManager.HandlePortfolioUpdate(accountName, contract.Symbol, position,
+                //        marketPrice, marketValue, averageCost, realisedPnl, unrealisedPnl)));
             }
         }
 
-        public virtual void updateAccountTime(string timestamp)
-        {
-            //Console.WriteLine("UpdateAccountTime. Time: " + timestamp + "\n");
-        }
-
-        public virtual void accountDownloadEnd(string account)
-        {
-            Console.WriteLine("Account download finished: " + account + "\n");
-        }
+       
 
         public virtual void orderStatus(int orderId, string status, int filled, int remaining, double avgFillPrice,
             int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
@@ -288,10 +305,13 @@ namespace MATLAB_trader.Logic
         {
             Console.WriteLine("CommissionReport. " + commissionReport.ExecId + " - " + commissionReport.Commission + " " +
                               commissionReport.Currency + " RPNL " + commissionReport.RealizedPNL + "\n");
-
             
-            tf.StartNew(() => OrderManager.HandleCommissionMessage(commissionReport.Map<CommissionReport,CommissionMessage>()));
+                tf.StartNew(
+                    () =>
+                        OrderManager.HandleCommissionMessage(commissionReport.Map<CommissionReport, CommissionMessage>()));
+            
         }
+
 
         public virtual void openOrderEnd()
         {
@@ -471,4 +491,5 @@ namespace MATLAB_trader.Logic
         {
         }
     }
+    
 }
