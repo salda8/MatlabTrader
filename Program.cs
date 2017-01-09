@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using IBApi;
 using MATLAB_trader.Data;
+using MATLAB_trader.Data.DataType;
 using MATLAB_trader.Logic;
 using NDesk.Options;
 
@@ -8,13 +12,16 @@ namespace MATLAB_trader
 {
     public class Program
     {
+        public static int AccountID;
+        private static IbClient wrapper;
+
         public static void Main(string[] args)
         {
             var showHelp = false;
             var names = new List<string>();
             var port = new List<int>();
             var account = new List<string>();
-            var repeat = 1;
+           
 
             var p = new OptionSet
             {
@@ -30,10 +37,10 @@ namespace MATLAB_trader
                     "a|account=", "the {account} of someone to greet.",
                     v => account.Add(v)
                 },
-                {
-                    "m|matlab=", "the {account} of someone to greet.",
-                    v => Matlab.Matlabexe = v
-                },
+                //{
+                //    //"m|matlab=", "the {account} of someone to greet.",
+                //    ////v => Matlab.Matlabexe = v
+                //},
 
                 {
                     "h|help", "show this message and exit",
@@ -75,15 +82,89 @@ namespace MATLAB_trader
                         AccountNumber = account[i],
                         Port = port[i]
                     });
-                    Console.WriteLine("Using Account number: " + account[i] + " Port:" + port[i] +
-                                      " on this matlab function:" + Matlab.Matlabexe);
+                    //Console.WriteLine("Using Account number: " + account[i] + " Port:" + port[i] +
+                    //                  " on this matlab function:" + Matlab.Matlabexe);
                 }
             }
 
-            Matlab.StartTrading();
+            StartTrading();
+            //Matlab.StartTrading();
 
             //Console.ReadKey();
             //return 0;
         }
+
+        public static void StartTrading()
+        {
+
+            //var wrapper = new IbClient();
+            //wrapper.ClientSocket.eConnect("127.0.0.1", 7496, 1, false);
+            //wrapper.AccountNumber = "DU15025";
+            //Program.AccountID = 3;
+            ////while (wrapper.NextOrderId <= 0)
+            ////{
+            ////}
+            //wrapper.ClientSocket.reqAccountUpdates(true, wrapper.AccountNumber);
+            //IbClient.WrapperList.Add(wrapper);
+
+            ConnectToIb();
+
+            Thread.Sleep(1000);
+
+
+
+            // var ml = new Matlab();
+
+
+
+            while (true)
+            {
+                Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+                while (TradingCalendar.TradingDay())
+                {
+                    while (HighResolutionDateTime.UtcNow.Second != 0)
+                    {
+                        Thread.Sleep(1);
+
+                    }
+
+                    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+                }
+                Thread.Sleep(10000);
+            }
+        }
+
+        private static void ConnectToIb()
+        {
+            wrapper = new IbClient();
+            EClientSocket clientSocket = wrapper.ClientSocket;
+            EReaderSignal readerSignal = wrapper.Signal;
+            
+            clientSocket.eConnect("127.0.0.1", 7496, 0);
+            clientSocket.reqAllOpenOrders();
+            clientSocket.reqPositions();
+            clientSocket.reqAccountUpdates(true, "DU15213");
+
+            //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
+            var reader = new EReader(clientSocket, readerSignal);
+            reader.Start();
+            //Once the messages are in the queue, an additional thread need to fetch them
+            new Thread(() =>
+            {
+                while (clientSocket.IsConnected())
+                {
+                    readerSignal.waitForSignal();
+                    reader.processMsgs();
+                }
+            }) {IsBackground = true}.Start();
+
+            while (wrapper.NextOrderId <= 0) { }
+        }
+
+        public static int LoadedSymbolInstrumentID(string messageContractSymbol)
+        {
+            return LoadedSymbolsDictionary[messageContractSymbol];
+        }
+        public static Dictionary<string, int> LoadedSymbolsDictionary { get; set; }
     }
 }

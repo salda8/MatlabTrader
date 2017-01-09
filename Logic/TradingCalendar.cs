@@ -38,7 +38,7 @@ namespace MATLAB_trader.Logic
             {
                 var cmd = con.CreateCommand();
                 cmd.CommandText =
-                    "SELECT Position FROM Portfolio WHERE Symbol=?symbol AND WHERE Account=?acc";
+                    "SELECT Quantity FROM Portfolio WHERE Symbol=?symbol AND WHERE Account=?acc";
                 cmd.Parameters.AddWithValue("?symbol", symbol);
                 //cmd.Parameters.AddWithValue("?acc", Program.AccountNumber);
 
