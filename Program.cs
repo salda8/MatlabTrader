@@ -152,7 +152,10 @@ namespace MATLAB_trader
 
         private static void ConnectToIb()
         {
-            wrapper = new IbClient();
+            var orderManager = new OrderManager(5557);
+            orderManager.StartPushServer();
+
+            wrapper = new IbClient(orderManager);
             EClientSocket clientSocket = wrapper.ClientSocket;
             EReaderSignal readerSignal = wrapper.Signal;
             
