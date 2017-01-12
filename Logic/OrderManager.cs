@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Configuration;
+
 
 namespace MATLAB_trader.Logic
 {
@@ -16,10 +19,63 @@ namespace MATLAB_trader.Logic
         private readonly string pushConnectionString;
         private readonly object pushSocketLock = new object();
         private PushSocket pushSocket;
+        private readonly string dealerConnectionString;
+        private static bool finished;
+        private readonly int waitTimeBeforeEquityRequestInMs;
 
-        public OrderManager(int pushPort)
+
+        public OrderManager()
         {
-            pushConnectionString = $"tcp://*:{pushPort}";
+            var pushPort = Properties.Settings.Default.PushPort;
+            if (pushPort>0)
+            {
+                pushConnectionString = $"tcp://*:{pushPort}";
+            }
+            else
+            {
+                throw new Exception("PushPort must be greater than zero.");
+            }
+           
+            var defaultDealerPort = Properties.Settings.Default.DealerPort;
+            if (defaultDealerPort > 0)
+            {
+                dealerConnectionString = $"tcp://*:{defaultDealerPort}";
+            }
+            else
+            {
+                throw new Exception("DealerPort must be greater than zero.");
+            }
+
+            waitTimeBeforeEquityRequestInMs=Properties.Settings.Default.WaitTimeBeforeEquityRequestInMs;
+            
+
+
+
+        }
+
+        public void StartServerToUpdateEquity()
+        {
+            using (var sender = new DealerSocket())
+            {
+                sender.Connect(dealerConnectionString);
+                while (!finished)
+                {
+                    var message = new NetMQMessage();
+                    message.Append(Program.AccountID);
+                    sender.SendMultipartMessage(message);
+                    Console.WriteLine("Sent request");
+
+                    var receiveFrameBytes = sender.ReceiveMultipartMessage();
+                    using (var ms = new MemoryStream())
+                    {
+                        var equity = MyUtils.ProtoBufDeserialize<Equity>(receiveFrameBytes[0].Buffer, ms);
+                        Console.WriteLine($"Equity: {equity.Value}");
+                    }
+
+
+                    Thread.Sleep(TimeSpan.FromMilliseconds(waitTimeBeforeEquityRequestInMs));
+                }
+            }
         }
 
         public void StartPushServer()
@@ -47,6 +103,8 @@ namespace MATLAB_trader.Logic
                     }
                 }
             }
+
+            finished = true;
         }
 
         /// <summary>

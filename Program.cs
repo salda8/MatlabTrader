@@ -9,8 +9,7 @@ using MATLAB_trader.Data;
 using MATLAB_trader.Data.DataType;
 using MATLAB_trader.Logic;
 using NDesk.Options;
-using NetMQ;
-using NetMQ.Sockets;
+using System.Configuration;
 using QDMS;
 
 namespace MATLAB_trader
@@ -103,7 +102,7 @@ namespace MATLAB_trader
         {
 
             ConnectToIb();
-            Task.Factory.StartNew(StartServerToUpdateEquity);
+            
             Thread.Sleep(1000);
 
             // var ml = new Matlab();
@@ -125,35 +124,13 @@ namespace MATLAB_trader
             }
         }
 
-        private static void StartServerToUpdateEquity()
-        {
-            using (var sender = new DealerSocket())
-            {
-                sender.Connect("tcp://127.0.0.1:5556");
-                while (true)
-                {
-                    var message = new NetMQMessage();
-                    message.Append(Program.AccountID);
-                    sender.SendMultipartMessage(message);
-                    Console.WriteLine("Sent request");
-                   
-                    var receiveFrameBytes = sender.ReceiveMultipartMessage();
-                    using (var ms = new MemoryStream())
-                    {
-                        var equity = MyUtils.ProtoBufDeserialize<Equity>(receiveFrameBytes[0].Buffer, ms);
-                        Console.WriteLine($"Equity: {equity.Value}");
-                    }
-
-
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-                }
-            }
-        }
+        
 
         private static void ConnectToIb()
         {
-            var orderManager = new OrderManager(5557);
+            var orderManager = new OrderManager();
             orderManager.StartPushServer();
+            Task.Factory.StartNew(orderManager.StartServerToUpdateEquity, TaskCreationOptions.LongRunning);
 
             wrapper = new IbClient(orderManager);
             EClientSocket clientSocket = wrapper.ClientSocket;
