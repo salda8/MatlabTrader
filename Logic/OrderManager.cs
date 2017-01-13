@@ -18,10 +18,14 @@ namespace MATLAB_trader.Logic
     {
         private readonly string pushConnectionString;
         private readonly object pushSocketLock = new object();
+        private readonly object dealerSocketLock = new object();
+
         private PushSocket pushSocket;
+        private DealerSocket dealerSocket;
         private readonly string dealerConnectionString;
         private static bool finished;
         private readonly int waitTimeBeforeEquityRequestInMs;
+        private NetMQPoller poller;
 
 
         public OrderManager()
@@ -29,7 +33,7 @@ namespace MATLAB_trader.Logic
             var pushPort = Properties.Settings.Default.PushPort;
             if (pushPort>0)
             {
-                pushConnectionString = $"tcp://*:{pushPort}";
+                pushConnectionString = $"tcp://localhost:{5700}";
             }
             else
             {
@@ -39,7 +43,7 @@ namespace MATLAB_trader.Logic
             var defaultDealerPort = Properties.Settings.Default.DealerPort;
             if (defaultDealerPort > 0)
             {
-                dealerConnectionString = $"tcp://*:{defaultDealerPort}";
+                dealerConnectionString = $"tcp://localhost:{5556}";
             }
             else
             {
@@ -58,17 +62,20 @@ namespace MATLAB_trader.Logic
             using (var sender = new DealerSocket())
             {
                 sender.Connect(dealerConnectionString);
+                Console.WriteLine($"Connected to {dealerConnectionString}");
                 while (!finished)
                 {
                     var message = new NetMQMessage();
+                    message.AppendEmptyFrame();
                     message.Append(Program.AccountID);
                     sender.SendMultipartMessage(message);
-                    Console.WriteLine("Sent request");
-
+                    Console.WriteLine($"Sent request with identity. {sender.Options.Identity}");
+                    Console.WriteLine("Waiting for answer.");
                     var receiveFrameBytes = sender.ReceiveMultipartMessage();
+                    Console.WriteLine("Answer received.");
                     using (var ms = new MemoryStream())
                     {
-                        var equity = MyUtils.ProtoBufDeserialize<Equity>(receiveFrameBytes[0].Buffer, ms);
+                        var equity = MyUtils.ProtoBufDeserialize<Equity>(receiveFrameBytes[1].Buffer, ms);
                         Console.WriteLine($"Equity: {equity.Value}");
                     }
 
@@ -84,9 +91,44 @@ namespace MATLAB_trader.Logic
             {
                 pushSocket = new PushSocket(pushConnectionString);
             }
+            //lock (dealerSocketLock)
+            //{
+            //    dealerSocket= new DealerSocket(dealerConnectionString);
+            //    dealerSocket.ReceiveReady += DealerSocketReceiveReadyHandler;
+            //}
+
+            var timer = new NetMQTimer(TimeSpan.FromMilliseconds(10000));
+
+            timer.Elapsed += (sender, args) =>
+            {
+                using (var ms = new MemoryStream())
+                {
+                    var equity =
+                        MyUtils.ProtoBufSerialize(
+                            new CommissionMessage() {Commission = 4, ExecutionId = "45", RealizedPnL = 4}, ms);
+                    var message = new NetMQMessage(2);
+                    message.Append(BitConverter.GetBytes((byte)MessageTypeEnum.CommissionPush));
+                    message.Append(equity);
+                    pushSocket.SendMultipartMessage(message);
+                }
+            };
+
+            poller = new NetMQPoller { pushSocket ,timer };
+            poller.RunAsync();
         }
 
-        public void StopServer()
+        private void DealerSocketReceiveReadyHandler(object sender, NetMQSocketEventArgs e)
+        {
+            
+        }
+
+        public void StopServers()
+        {
+            StopPushServer();
+            StopDealerServer();
+        }
+
+        private void StopDealerServer()
         {
             lock (pushSocketLock)
             {
@@ -98,13 +140,33 @@ namespace MATLAB_trader.Logic
                     }
                     finally
                     {
+                        finished = true;
                         pushSocket.Close();
                         pushSocket = null;
                     }
                 }
             }
+        }
 
-            finished = true;
+        private void StopPushServer()
+        {
+            lock (pushSocketLock)
+            {
+                if (pushSocket != null)
+                {
+                    try
+                    {
+                        pushSocket.Disconnect(pushConnectionString);
+                        
+                    }
+                    finally
+                    {
+                        dealerSocket.ReceiveReady -= DealerSocketReceiveReadyHandler;
+                        pushSocket.Close();
+                        pushSocket = null;
+                    }
+                }
+            }
         }
 
         /// <summary>

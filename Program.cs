@@ -109,18 +109,18 @@ namespace MATLAB_trader
 
             while (true)
             {
-                Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                while (TradingCalendar.TradingDay())
-                {
-                    while (HighResolutionDateTime.UtcNow.Second != 0)
-                    {
-                        Thread.Sleep(1);
+                //Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+                //while (TradingCalendar.TradingDay())
+                //{
+                //    while (HighResolutionDateTime.UtcNow.Second != 0)
+                //    {
+                //        Thread.Sleep(1);
 
-                    }
+                //    }
 
-                    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                }
-                Thread.Sleep(10000);
+                //    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+                //}
+                //Thread.Sleep(10000);
             }
         }
 
@@ -132,28 +132,28 @@ namespace MATLAB_trader
             orderManager.StartPushServer();
             Task.Factory.StartNew(orderManager.StartServerToUpdateEquity, TaskCreationOptions.LongRunning);
 
-            wrapper = new IbClient(orderManager);
-            EClientSocket clientSocket = wrapper.ClientSocket;
-            EReaderSignal readerSignal = wrapper.Signal;
+            //wrapper = new IbClient(orderManager);
+            //EClientSocket clientSocket = wrapper.ClientSocket;
+            //EReaderSignal readerSignal = wrapper.Signal;
             
-            clientSocket.eConnect("127.0.0.1", 7496, 0);
-            clientSocket.reqAllOpenOrders();
-            clientSocket.reqPositions();
+            //clientSocket.eConnect("127.0.0.1", 7496, 0);
+            //clientSocket.reqAllOpenOrders();
+            //clientSocket.reqPositions();
           
-            //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
-            var reader = new EReader(clientSocket, readerSignal);
-            reader.Start();
-            //Once the messages are in the queue, an additional thread need to fetch them
-            new Thread(() =>
-            {
-                while (clientSocket.IsConnected())
-                {
-                    readerSignal.waitForSignal();
-                    reader.processMsgs();
-                }
-            }) {IsBackground = true}.Start();
+            ////Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
+            //var reader = new EReader(clientSocket, readerSignal);
+            //reader.Start();
+            ////Once the messages are in the queue, an additional thread need to fetch them
+            //new Thread(() =>
+            //{
+            //    while (clientSocket.IsConnected())
+            //    {
+            //        readerSignal.waitForSignal();
+            //        reader.processMsgs();
+            //    }
+            //}) {IsBackground = true}.Start();
 
-            while (wrapper.NextOrderId <= 0) { }
+            //while (wrapper.NextOrderId <= 0) { }
         }
 
         public static int LoadedSymbolInstrumentID(string messageContractSymbol)
