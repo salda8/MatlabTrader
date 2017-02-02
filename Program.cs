@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using IBApi;
@@ -7,12 +9,14 @@ using MATLAB_trader.Data;
 using MATLAB_trader.Data.DataType;
 using MATLAB_trader.Logic;
 using NDesk.Options;
+using System.Configuration;
+using QDMS;
 
 namespace MATLAB_trader
 {
     public class Program
     {
-        public static int AccountID;
+        public static int AccountID=1;
         private static IbClient wrapper;
 
         public static void Main(string[] args)
@@ -97,68 +101,59 @@ namespace MATLAB_trader
         public static void StartTrading()
         {
 
-            //var wrapper = new IbClient();
-            //wrapper.ClientSocket.eConnect("127.0.0.1", 7496, 1, false);
-            //wrapper.AccountNumber = "DU15025";
-            //Program.AccountID = 3;
-            ////while (wrapper.NextOrderId <= 0)
-            ////{
-            ////}
-            //wrapper.ClientSocket.reqAccountUpdates(true, wrapper.AccountNumber);
-            //IbClient.WrapperList.Add(wrapper);
-
             ConnectToIb();
-
+            
             Thread.Sleep(1000);
-
-
 
             // var ml = new Matlab();
 
-
-
             while (true)
             {
-                Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                while (TradingCalendar.TradingDay())
-                {
-                    while (HighResolutionDateTime.UtcNow.Second != 0)
-                    {
-                        Thread.Sleep(1);
+                //Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+                //while (TradingCalendar.TradingDay())
+                //{
+                //    while (HighResolutionDateTime.UtcNow.Second != 0)
+                //    {
+                //        Thread.Sleep(1);
 
-                    }
+                //    }
 
-                    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                }
-                Thread.Sleep(10000);
+                //    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+                //}
+                //Thread.Sleep(10000);
             }
         }
 
+        
+
         private static void ConnectToIb()
         {
-            wrapper = new IbClient();
-            EClientSocket clientSocket = wrapper.ClientSocket;
-            EReaderSignal readerSignal = wrapper.Signal;
+            var orderManager = new OrderManager();
+            orderManager.StartPushServer();
+            Task.Factory.StartNew(orderManager.StartServerToUpdateEquity, TaskCreationOptions.LongRunning);
+
+            //wrapper = new IbClient(orderManager);
+            //EClientSocket clientSocket = wrapper.ClientSocket;
+            //EReaderSignal readerSignal = wrapper.Signal;
             
-            clientSocket.eConnect("127.0.0.1", 7496, 0);
-            clientSocket.reqAllOpenOrders();
-            clientSocket.reqPositions();
-            clientSocket.reqAccountUpdates(true, "DU15213");
+            //clientSocket.eConnect("127.0.0.1", 7496, 0);
+            //clientSocket.reqAllOpenOrders();
+            //clientSocket.reqPositions();
+          
+            ////Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
+            //var reader = new EReader(clientSocket, readerSignal);
+            //reader.Start();
+            ////Once the messages are in the queue, an additional thread need to fetch them
+            //new Thread(() =>
+            //{
+            //    while (clientSocket.IsConnected())
+            //    {
+            //        readerSignal.waitForSignal();
+            //        reader.processMsgs();
+            //    }
+            //}) {IsBackground = true}.Start();
 
-            //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
-            var reader = new EReader(clientSocket, readerSignal);
-            reader.Start();
-            //Once the messages are in the queue, an additional thread need to fetch them
-            new Thread(() =>
-            {
-                while (clientSocket.IsConnected())
-                {
-                    readerSignal.waitForSignal();
-                    reader.processMsgs();
-                }
-            }) {IsBackground = true}.Start();
-
-            while (wrapper.NextOrderId <= 0) { }
+            //while (wrapper.NextOrderId <= 0) { }
         }
 
         public static int LoadedSymbolInstrumentID(string messageContractSymbol)

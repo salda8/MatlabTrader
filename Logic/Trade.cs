@@ -7,9 +7,7 @@ namespace MATLAB_trader.Logic
 {
     public class Trade
     {
-        private static readonly Random R = new Random();
-        private readonly string _account;
-        private static readonly Contract futureComboContract = new Contract
+        private static  Contract futureComboContract = new Contract
         {
             Symbol = "ES",
             SecType = "FUT",

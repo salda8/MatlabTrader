@@ -29,7 +29,8 @@ namespace MATLAB_trader
             Mapper.Register<CommissionReport, CommissionMessage>()
                   .Member(dest => dest.Commission, src => new decimal(src.Commission))
                   .Member(dest => dest.ExecutionId, src => src.ExecId)
-                  .Member(dest => dest.RealizedPnL, src => src.RealizedPNL > 100000000 ? 100000000 : src.RealizedPNL);
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                  .Member(dest => dest.RealizedPnL, src => (src.RealizedPNL == double.MaxValue) ? 1000000: src.RealizedPNL);
 
             
                 

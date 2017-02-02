@@ -1,29 +1,172 @@
-﻿using System;
+﻿using MATLAB_trader.Data;
+using MATLAB_trader.Data.DataType;
+using NetMQ;
+using NetMQ.Sockets;
+using QDMS;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using MATLAB_trader.Data;
-using MATLAB_trader.Data.DataType;
-using QDMS;
+using System.Threading;
+using System.Configuration;
+
 
 namespace MATLAB_trader.Logic
 {
     public class OrderManager
     {
-        private static readonly TaskFactory Tf = new TaskFactory(TaskScheduler.Default);
-        #region DatabaseInteraction
+        private readonly string pushConnectionString;
+        private readonly object pushSocketLock = new object();
+        private readonly object dealerSocketLock = new object();
 
-        /// <summary>
-        ///     Handles the account update.
-        /// </summary>
-        /// <param name="accountName">Name of the account.</param>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        public static void HandleAccountUpdate(string accountName, string key, string value)
+        private PushSocket pushSocket;
+        private DealerSocket dealerSocket;
+        private readonly string dealerConnectionString;
+        private static bool finished;
+        private readonly int waitTimeBeforeEquityRequestInMs;
+        private NetMQPoller poller;
+
+
+        public OrderManager()
         {
-          
+            var pushPort = Properties.Settings.Default.PushPort;
+            if (pushPort>0)
+            {
+                pushConnectionString = $"tcp://localhost:{5700}";
+            }
+            else
+            {
+                throw new Exception("PushPort must be greater than zero.");
+            }
+           
+            var defaultDealerPort = Properties.Settings.Default.DealerPort;
+            if (defaultDealerPort > 0)
+            {
+                dealerConnectionString = $"tcp://localhost:{5556}";
+            }
+            else
+            {
+                throw new Exception("DealerPort must be greater than zero.");
+            }
+
+            waitTimeBeforeEquityRequestInMs=Properties.Settings.Default.WaitTimeBeforeEquityRequestInMs;
             
+
+
+
+        }
+
+        public void StartServerToUpdateEquity()
+        {
+            using (var sender = new DealerSocket())
+            {
+                sender.Connect(dealerConnectionString);
+                Console.WriteLine($"Connected to {dealerConnectionString}");
+                while (!finished)
+                {
+                    var message = new NetMQMessage();
+                    message.AppendEmptyFrame();
+                    message.Append(Program.AccountID);
+                    sender.SendMultipartMessage(message);
+                    Console.WriteLine($"Sent request with identity. {sender.Options.Identity}");
+                    Console.WriteLine("Waiting for answer.");
+                    var receiveFrameBytes = sender.ReceiveMultipartMessage();
+                    Console.WriteLine("Answer received.");
+                    using (var ms = new MemoryStream())
+                    {
+                        var equity = MyUtils.ProtoBufDeserialize<Equity>(receiveFrameBytes[1].Buffer, ms);
+                        Console.WriteLine($"Equity: {equity.Value}");
+                    }
+
+
+                    Thread.Sleep(TimeSpan.FromMilliseconds(waitTimeBeforeEquityRequestInMs));
+                }
+            }
+        }
+
+        public void StartPushServer()
+        {
+            lock (pushSocketLock)
+            {
+                pushSocket = new PushSocket(pushConnectionString);
+            }
+            //lock (dealerSocketLock)
+            //{
+            //    dealerSocket= new DealerSocket(dealerConnectionString);
+            //    dealerSocket.ReceiveReady += DealerSocketReceiveReadyHandler;
+            //}
+
+            var timer = new NetMQTimer(TimeSpan.FromMilliseconds(10000));
+
+            timer.Elapsed += (sender, args) =>
+            {
+                using (var ms = new MemoryStream())
+                {
+                    var equity =
+                        MyUtils.ProtoBufSerialize(
+                            new CommissionMessage() {Commission = 4, ExecutionId = "45", RealizedPnL = 4}, ms);
+                    var message = new NetMQMessage(2);
+                    message.Append(BitConverter.GetBytes((byte)MessageTypeEnum.CommissionPush));
+                    message.Append(equity);
+                    pushSocket.SendMultipartMessage(message);
+                }
+            };
+
+            poller = new NetMQPoller { pushSocket ,timer };
+            poller.RunAsync();
+        }
+
+        private void DealerSocketReceiveReadyHandler(object sender, NetMQSocketEventArgs e)
+        {
+            
+        }
+
+        public void StopServers()
+        {
+            StopPushServer();
+            StopDealerServer();
+        }
+
+        private void StopDealerServer()
+        {
+            lock (pushSocketLock)
+            {
+                if (pushSocket != null)
+                {
+                    try
+                    {
+                        pushSocket.Disconnect(pushConnectionString);
+                    }
+                    finally
+                    {
+                        finished = true;
+                        pushSocket.Close();
+                        pushSocket = null;
+                    }
+                }
+            }
+        }
+
+        private void StopPushServer()
+        {
+            lock (pushSocketLock)
+            {
+                if (pushSocket != null)
+                {
+                    try
+                    {
+                        pushSocket.Disconnect(pushConnectionString);
+                        
+                    }
+                    finally
+                    {
+                        dealerSocket.ReceiveReady -= DealerSocketReceiveReadyHandler;
+                        pushSocket.Close();
+                        pushSocket = null;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -95,9 +238,9 @@ namespace MATLAB_trader.Logic
         /// <summary>
         ///     Handles the error MSG.
         /// </summary>
-        /// <param name="id">The identifier.</param>
         /// <param name="errorCode">The error code.</param>
         /// <param name="errorMsg">The error MSG.</param>
+        /// <param name="acc"></param>
         public static void HandleErrorMsg(int errorCode, string errorMsg, string acc)
         {
             using (var con = Db.OpenConnection())
@@ -115,246 +258,41 @@ namespace MATLAB_trader.Logic
             }
         }
 
-        /// <summary>
-        ///     Handles the equity update.
-        /// </summary>
-        /// <param name="accountName">Name of the account.</param>
-        /// <param name="value">The value.</param>
-        private static void HandleEquityUpdate(string accountName, double value)
-        {
-            
-        }
+        #region MessageHandling
 
-        /// <summary>
-        ///     Handles the account insert.
-        /// </summary>
-        /// <param name="accountName">Name of the account.</param>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        private static void HandleAccountInsert(string accountName, string key, double value)
+        public static TradeDirection ConvertFromString(string side) => side == "BUY" ? TradeDirection.Long : TradeDirection.Short;
+
+        public void HandleMessages(object objectToSend, MessageTypeEnum messageType)
         {
-            using (var con = Db.OpenConnection())
+            using (var ms = new MemoryStream())
             {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "INSERT INTO AccountSummary (AccountNumber, Updatetime) " +
-                        "VALUES (?acc, ?time) ";
-                    cmd.Parameters.AddWithValue("?acc", accountName);
-                    cmd.Parameters.AddWithValue("?time", DateTime.Now);
-                    var result = cmd.ExecuteNonQuery();
-                }
+                var messageToSend = new NetMQMessage(2);
+                messageToSend.Append(BitConverter.GetBytes((byte) messageType));
+                messageToSend.Append(MyUtils.ProtoBufSerialize(objectToSend, ms));
+                pushSocket.SendMultipartMessage(messageToSend);
+                  
             }
         }
 
-        /// <summary>
-        ///     Handles the net liquidation account update.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        /// <param name="accountName"></param>
-        public static void HandleNetLiquidationAccountUpdate(string key, double value, string accountName)
-        {
-           
-        }
+        #endregion MessageHandling
 
-        public static TradeDirection ConvertFromString(string side) => side=="BUY"? TradeDirection.Long : TradeDirection.Short;
-
-        /// <summary>
-        ///     Handles the commission message.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        public static void HandleCommissionMessage(CommissionMessage message)
-        {
-           
-
-        }
-
-        
-        /// <summary>
-        ///     Handles the open order.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        public static void HandleOpenOrder(OpenOrder message)
-        {
-
-        }
-
-        
-
-        //comes with OpenOrder
-        /// <summary>
-        ///     Handles the order status.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        public static void HandleOrderStatus(OrderStatusMessage message)
-        {
-           
-        }
-        
-
-        /// <summary>
-        ///     Handles the execution message.
-        ///     todo not sure if this should be here and not on server
-        /// </summary>
-        /// <param name="message">The message.</param>
-        public static void HandleExecutionMessage(ExecutionMessage message)
-        {
-            
-           
-        }
-
-       /// <summary>
-        ///     Handles the portfolio update.
-        /// </summary>
-        /// <param name="accountName">Name of the account.</param>
-        /// <param name="s">The symbol.</param>
-        /// <param name="position">The position.</param>
-        /// <param name="marketPrice">The market price.</param>
-        /// <param name="marketValue">The market value.</param>
-        /// <param name="averageCost">The average cost.</param>
-        /// <param name="realisedPnl">The realised PNL.</param>
-        /// <param name="unrealisedPnl">The unrealised PNL.</param>
-        public static void HandlePortfolioInsert(string accountName, string s, int position, double marketPrice,
-            double marketValue, double averageCost, double realisedPnl, double unrealisedPnl)
-        {
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "INSERT Portfolio (Symbol,Quantity,MarketPrice,MarketValue,AveragePrice,UnrealizedPnL,RealizedPnL, Account,Updatetime) " +
-                        "VALUES (?symbol,?pos,?mp,?mv,?ac,?upnl,?rpnl, ?acc,?time)";
-                    cmd.Parameters.AddWithValue("?symbol", s);
-                    cmd.Parameters.AddWithValue("?pos", position);
-                    cmd.Parameters.AddWithValue("?mp", marketPrice);
-                    cmd.Parameters.AddWithValue("?mv", marketValue);
-                    cmd.Parameters.AddWithValue("?ac", averageCost);
-                    cmd.Parameters.AddWithValue("?upnl", unrealisedPnl);
-                    cmd.Parameters.AddWithValue("?rpnl", realisedPnl);
-                    cmd.Parameters.AddWithValue("?acc", accountName);
-                    cmd.Parameters.AddWithValue("?time", DateTime.Now);
-
-                    var result = cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        /// <summary>
-        ///     Handles the portfolio update.
-        /// </summary>
-        /// <param name="accountName">Name of the account.</param>
-        /// <param name="symbol">The symbol.</param>
-        /// <param name="position">The position.</param>
-        /// <param name="marketPrice">The market price.</param>
-        /// <param name="marketValue">The market value.</param>
-        /// <param name="averageCost">The average cost.</param>
-        /// <param name="realisedPnl">The realised PNL.</param>
-        /// <param name="unrealisedPnl">The unrealised PNL.</param>
-        public static void HandlePortfolioUpdate(string accountName, string symbol, int position, double marketPrice,
-            double marketValue, double averageCost, double realisedPnl, double unrealisedPnl)
-        {
-            Portfolio.LivePortfolioTradesList.Add(new Portfolio(symbol, Convert.ToString(position), accountName));
-            using (var con = Db.OpenConnection())
-            {
-                using (var cmd = con.CreateCommand())
-                {
-                    cmd.CommandText =
-                        "UPDATE Portfolio SET Symbol=?symbol,Quantity=?pos,MarketPrice=?mp,MarketValue=?mv,AveragePrice=?ac,UnrealizedPnL=?upnl,RealizedPnL=?rpnl,Updatetime=?time " +
-                        "WHERE Symbol=?symbol AND Account=?acc";
-                    cmd.Parameters.AddWithValue("?symbol", symbol);
-                    cmd.Parameters.AddWithValue("?pos", position);
-                    cmd.Parameters.AddWithValue("?mp", marketPrice);
-                    cmd.Parameters.AddWithValue("?mv", marketValue);
-                    cmd.Parameters.AddWithValue("?ac", averageCost);
-                    cmd.Parameters.AddWithValue("?upnl", unrealisedPnl);
-                    cmd.Parameters.AddWithValue("?rpnl", realisedPnl);
-                    cmd.Parameters.AddWithValue("?acc", accountName);
-                    cmd.Parameters.AddWithValue("?Time", DateTime.Now);
-                    try
-                    {
-                        var rows = cmd.ExecuteNonQuery();
-                        if (rows == 0)
-                        {
-                            HandlePortfolioInsert(accountName, symbol, position, marketPrice, marketValue, averageCost,
-                                realisedPnl,
-                                unrealisedPnl);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Looks OBSOLETE
-        ///     Selects the open orders from database.
-        /// </summary>
-        /// <param name="accountNumber">The account number.</param>
+        //// <summary>
+        //// Looks OBSOLETE
+        ////     Selects the open orders from database.
+        //// </summary>
+        //// <param name="accountNumber">The account number.</param>
         //public static void SelectOpenOrdersFromDatabase(string accountNumber)
         //{
-        //    using (var con = Db.OpenConnection())
-        //    {
-        //        using (var cmd = con.CreateCommand())
-        //        {
-        //            cmd.CommandText =
-        //                "SELECT * FROM OpenOrders WHERE AccountNumber=?acc";
-        //            cmd.Parameters.AddWithValue("?acc", "DU" + accountNumber);
-
-        //            using (var reader = cmd.ExecuteReader())
-        //            {
-        //                while (reader.Read())
-        //                {
-        //                    OpenOrderMessageList.Add(new OpenOrder
-        //                    {
-        //                        Account = reader.GetString(6),
-        //                        PermanentId = reader.GetInt32(1),
-        //                        ContractSymbol = reader.GetString(2),
-        //                        Status = reader.GetString(3),
-        //                        LimitPrice = reader.GetDouble(4),
-        //                        Quantity = reader.GetInt16(5),
-        //                        Side = reader.GetString(7),
-        //                        Type = reader.GetString(9),
-        //                        Tif = reader.GetString(10)
-        //                    });
-        //                }
-        //            }
-        //        }
-        //    }
         //}
 
-        /// <summary>
-        /// LOOKS OBSOLETE
-        ///     Selects the live trade from database.
-        /// </summary>
-        /// <param name="accountNumber">The account number.</param>
+        //// <summary>
+        //// LOOKS OBSOLETE
+        ////     Selects the live trade from database.
+        //// </summary>
+        //// <param name="accountNumber">The account number.</param>
         //public static void SelectLiveTradeFromDatabase(string accountNumber)
         //{
-        //    using (var con = Db.OpenConnection())
-        //    {
-        //        using (var cmd = con.CreateCommand())
-        //        {
-        //            cmd.CommandText =
-        //                "SELECT * FROM livetrades WHERE AccountNumber=?acc";
-        //            cmd.Parameters.AddWithValue("?acc", "DU" + accountNumber);
-
-        //            using (var reader = cmd.ExecuteReader())
-        //            {
-        //                while (reader.Read())
-        //                {
-        //                    LiveTrades.Add(new LiveTrade(reader.GetInt16(1), reader.GetString(3),
-        //                        reader.GetInt16(6), reader.GetString(2).Substring(2, 5),
-        //                        reader.GetString(2).Substring(0, 2), reader.GetInt16(4), reader.GetString(5),
-        //                        reader.GetDouble(7), reader.GetDateTime(10)));
-        //                }
-        //            }
-        //        }
-        //    }
+        //
         //}
-
-        #endregion
     }
 }
