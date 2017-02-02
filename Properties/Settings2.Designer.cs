@@ -34,5 +34,41 @@ namespace MATLAB_trader.Properties {
                 this["TradingOnBankingHoliday"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10000")]
+        public int WaitTimeBeforeEquityRequestInMs {
+            get {
+                return ((int)(this["WaitTimeBeforeEquityRequestInMs"]));
+            }
+            set {
+                this["WaitTimeBeforeEquityRequestInMs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5700")]
+        public int PushPort {
+            get {
+                return ((int)(this["PushPort"]));
+            }
+            set {
+                this["PushPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5556")]
+        public int DealerPort {
+            get {
+                return ((int)(this["DealerPort"]));
+            }
+            set {
+                this["DealerPort"] = value;
+            }
+        }
     }
 }

@@ -435,7 +435,7 @@
 
 //            while (true)
 //            {
-//                while (TradingCalendar.TradingDay())
+//                while (TradingCalendar.IsTradingDay())
 //                {
 //                    while (HighResolutionDateTime.UtcNow.Second != 0)
 //                    {

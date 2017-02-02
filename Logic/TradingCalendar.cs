@@ -5,7 +5,7 @@ namespace MATLAB_trader.Logic
 {
     internal class TradingCalendar
     {
-        public static bool TradingDay()
+        public static bool IsTradingDay()
         {
            
             var dt = DateTime.Now;
