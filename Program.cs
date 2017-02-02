@@ -75,7 +75,7 @@ namespace MATLAB_trader
             {
                 var message = string.Join(" ", extra.ToArray());
                 Console.WriteLine
-                    (" At least one Unrecognized parameter. Using new message: {0}", message);
+                    ("At least one Unrecognized parameter. Using new message: {0}", message);
             }
             else
             {
@@ -107,20 +107,20 @@ namespace MATLAB_trader
 
             // var ml = new Matlab();
 
-            while (true)
+            while (TradingCalendar.IsTradingDay())
             {
                 //Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                //while (TradingCalendar.TradingDay())
-                //{
-                //    while (HighResolutionDateTime.UtcNow.Second != 0)
-                //    {
-                //        Thread.Sleep(1);
+                while (true)
+                {
+                    while (HighResolutionDateTime.UtcNow.Second != 0)
+                    {
+                        Thread.Sleep(1);
 
-                //    }
+                    }
 
-                //    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                //}
-                //Thread.Sleep(10000);
+                    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+                }
+                Thread.Sleep(10000);
             }
         }
 
@@ -162,4 +162,5 @@ namespace MATLAB_trader
         }
         public static Dictionary<string, int> LoadedSymbolsDictionary { get; set; }
     }
+
 }
