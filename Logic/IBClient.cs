@@ -14,7 +14,7 @@ namespace MATLAB_trader.Logic
 {
     public class IbClient : EWrapper
     {
-        private readonly OrderManager orderManager;
+        private readonly NetMqMessanger netMqMessanger;
         public static List<IbClient> WrapperList = new List<IbClient>();
         public static bool Firstime = true;
         public static double LastPrice;
@@ -22,9 +22,9 @@ namespace MATLAB_trader.Logic
         private readonly TaskFactory tf = new TaskFactory();
         private EReaderMonitorSignal signal;
 
-        public IbClient(OrderManager orderManager)
+        public IbClient(NetMqMessanger netMqMessanger)
         {
-            this.orderManager = orderManager;
+            this.netMqMessanger = netMqMessanger;
             Signal = new EReaderMonitorSignal();
             ClientSocket = new EClientSocket(this, Signal);
             
@@ -58,7 +58,7 @@ namespace MATLAB_trader.Logic
         public virtual void error(int id, int errorCode, string errorMsg)
         {
             Console.WriteLine("Error. Id: " + id + ", Code: " + errorCode + ", Msg: " + errorMsg + "\n");
-           // tf.StartNew(() => OrderManager.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
+           // tf.StartNew(() => NetMqMessanger.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
         }
 
         public virtual void realtimeBar(int reqId, long time, double open, double high, double low, double close,
@@ -128,7 +128,7 @@ namespace MATLAB_trader.Logic
             //Data.BarListData2.Add(new BarData2(open, high, low, close, volume, date));
             ////var tf = new TaskFactory();
             //_tf.StartNew(() =>
-            //    OrderManager.HandleNewBar(open, high, low, close, date));
+            //    NetMqMessanger.HandleNewBar(open, high, low, close, date));
         }
 
         public virtual void connectionClosed()
@@ -159,7 +159,7 @@ namespace MATLAB_trader.Logic
                                   ", CanAutoExecute: " + canAutoExecute);
                 //Console.WriteLine("***************************");
                 //Console.WriteLine(DateTime.Now.ToString("mm:ss.fff"));
-                //_tf.StartNew(() => OrderManager.HandleTick(price));
+                //_tf.StartNew(() => NetMqMessanger.HandleTick(price));
 
                 //Strategy.Director();
             }
@@ -253,11 +253,11 @@ namespace MATLAB_trader.Logic
                     if (key == "NetLiquidation") Equity = Convert.ToDouble(value, provider);
                 }
 
-               // tf.StartNew((() => OrderManager.HandleAccountUpdate(accountName, key, value)));
+               // tf.StartNew((() => NetMqMessanger.HandleAccountUpdate(accountName, key, value)));
             }
         }
 
-        public virtual void updatePortfolio(Contract contract, int position, double marketPrice, double marketValue,
+        public virtual void UpdatePortfolio(Contract contract, int position, double marketPrice, double marketValue,
             double averageCost, double unrealisedPnl, double realisedPnl, string accountName)
         {
             if (contract.SecType == "FUT")
@@ -270,14 +270,14 @@ namespace MATLAB_trader.Logic
                                   ", AccountName: " + accountName + "\n");
                 //tf.StartNew(
                 //    (() =>
-                //        OrderManager.HandlePortfolioUpdate(accountName, contract.Symbol, position,
+                //        NetMqMessanger.HandlePortfolioUpdate(accountName, contract.Symbol, position,
                 //        marketPrice, marketValue, averageCost, realisedPnl, unrealisedPnl)));
             }
         }
 
        
 
-        public virtual void orderStatus(int orderId, string status, int filled, int remaining, double avgFillPrice,
+        public virtual void OrderStatus(int orderId, string status, int filled, int remaining, double avgFillPrice,
             int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
         {
             Console.WriteLine("OrderStatus. Id: " + orderId + ", Status: " + status + ", Filled" + filled +
@@ -285,7 +285,7 @@ namespace MATLAB_trader.Logic
                               + ", AverageFillPrice: " + avgFillPrice + ", PermanentId: " + permId + ", ParentId: " + parentId +
                               ", LastFillPrice: " + lastFillPrice + ", ClientId: " + clientId + ", WhyHeld: " + whyHeld +
                               "\n");
-            tf.StartNew(() => orderManager.HandleMessages(ObjectContructorHelper.GetOrderStatusMessage(orderId, status, filled, remaining,
+            tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetOrderStatusMessage(orderId, status, filled, remaining,
                         avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld), MessageTypeEnum.OrderStatusPush));
         }
 
@@ -294,7 +294,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("OpenOrder. ID: " + orderId + ", " + contract.Symbol + ", " + contract.SecType + " @ " +
                               contract.Exchange + ": " + order.Action + ", " + order.OrderType + " " +
                               order.TotalQuantity + ", " + orderState.Status + "\n");
-            tf.StartNew(() => orderManager.HandleMessages(ObjectContructorHelper.GetOpenOrder(contract, order, orderState), MessageTypeEnum.OpenOrderPush));
+            tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetOpenOrder(contract, order, orderState), MessageTypeEnum.OpenOrderPush));
         }
 
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
@@ -302,7 +302,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("ExecDetails. " + reqId + " - " + contract.Symbol + ", " + contract.SecType + ", " +
                               contract.Currency + " - " + execution.ExecId + ", " + execution.OrderId + ", " +
                               execution.Shares + "\n");
-            tf.StartNew(() => orderManager.HandleMessages(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution), MessageTypeEnum.ExecutionPush));
+            tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution), MessageTypeEnum.ExecutionPush));
         }
 
         public virtual void commissionReport(CommissionReport commissionReport)
@@ -310,7 +310,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("CommissionReport. " + commissionReport.ExecId + " - " + commissionReport.Commission + " " +
                               commissionReport.Currency + " RPNL " + commissionReport.RealizedPNL + "\n");
 
-            tf.StartNew( () =>orderManager.HandleMessages(commissionReport.Map<CommissionReport, CommissionMessage>(), MessageTypeEnum.CommissionPush));
+            tf.StartNew( () =>netMqMessanger.HandleMessages(commissionReport.Map<CommissionReport, CommissionMessage>(), MessageTypeEnum.CommissionPush));
 
         }
 
@@ -366,7 +366,7 @@ namespace MATLAB_trader.Logic
                               ", Exchange of Origin: " + origExchange + "\n");
         }
 
-        public virtual void position(string account, Contract contract, int pos, double avgCost)
+        public virtual void Position(string account, Contract contract, int pos, double avgCost)
         {
             Console.WriteLine("Quantity. " + account + " - Symbol: " + contract.Symbol + ", SecType: " +
                               contract.SecType + ", Currency: " + contract.Currency + ", Quantity: " + pos +
@@ -453,7 +453,7 @@ namespace MATLAB_trader.Logic
             return userTime.ToString("hh:mm:ss.fff");
         }
         public void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue,
-                                    double averageCost, double unrealisedPNL, double realisedPNL,
+                                    double averageCost, double unrealisedPnl, double realisedPnl,
                                     string accountName)
         {
         }

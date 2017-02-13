@@ -43,7 +43,7 @@ namespace MATLAB_trader
                 },
                 //{
                 //    //"m|matlab=", "the {account} of someone to greet.",
-                //    ////v => Matlab.Matlabexe = v
+                //    ////v => Matlab.MatlabFunction = v
                 //},
 
                 {
@@ -87,7 +87,7 @@ namespace MATLAB_trader
                         Port = port[i]
                     });
                     //Console.WriteLine("Using Account number: " + account[i] + " Port:" + port[i] +
-                    //                  " on this matlab function:" + Matlab.Matlabexe);
+                    //                  " on this matlab function:" + Matlab.MatlabFunction);
                 }
             }
 
@@ -100,35 +100,34 @@ namespace MATLAB_trader
 
         public static void StartTrading()
         {
-
             ConnectToIb();
             
-            Thread.Sleep(1000);
+            var activationContext = Type.GetTypeFromProgID("matlab.application.single");
+            var matlab = new Matlab((MLApp.MLApp)Activator.CreateInstance(activationContext));
+            matlab.StartTrading();
 
-            // var ml = new Matlab();
+            //while (TradingCalendar.IsTradingDay())
+            //{
+            //    //Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
+            //    while (true)
+            //    {
+            //        while (HighResolutionDateTime.UtcNow.Second != 0)
+            //        {
+            //            Thread.Sleep(1);
 
-            while (TradingCalendar.IsTradingDay())
-            {
-                //Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                while (true)
-                {
-                    while (HighResolutionDateTime.UtcNow.Second != 0)
-                    {
-                        Thread.Sleep(1);
+            //        }
 
-                    }
-
-                    Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-                }
-                Thread.Sleep(10000);
-            }
+            //        matlab.UseMatlab();
+            //    }
+            //    Thread.Sleep(10000);
+            //}
         }
 
         
 
         private static void ConnectToIb()
         {
-            var orderManager = new OrderManager();
+            var orderManager = new NetMqMessanger();
             orderManager.StartPushServer();
             Task.Factory.StartNew(orderManager.StartServerToUpdateEquity, TaskCreationOptions.LongRunning);
 
