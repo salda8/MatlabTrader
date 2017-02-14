@@ -80,16 +80,17 @@
     <Compile Include="Data\DataType\MinuteBar.cs" />
     <Compile Include="Data\DataType\Portfolio.cs" />
     <Compile Include="Data\Db.cs" />
+    <Compile Include="Data\Matlab\MatlabNumberOfContracts.cs" />
     <Compile Include="Data\MyContracts.cs" />
     <Compile Include="Logic\IBClient.cs" />
     <Compile Include="Logic\Matlab.cs" />
-    <Compile Include="Logic\OrderManager.cs" />
+    <Compile Include="Logic\NetMqMessanger.cs" />
     <Compile Include="Logic\Trade.cs" />
     <Compile Include="Logic\TradingCalendar.cs" />
     <Compile Include="MappingConfiguration.cs" />
-    <Compile Include="MatlabParameters.cs" />
-    <Compile Include="MatlabType.cs" />
-    <Compile Include="MatlabValue.cs" />
+    <Compile Include="Data\Matlab\MatlabParameters.cs" />
+    <Compile Include="Data\Matlab\MatlabType.cs" />
+    <Compile Include="Data\Matlab\MatlabValue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings2.Designer.cs">
@@ -119,6 +120,17 @@
       <Project>{7ea40d71-4d14-4b86-b07d-932959fa0d20}</Project>
       <Name>QDMS</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="MLApp">
+      <Guid>{C36E46AB-6A81-457B-9F91-A7719A06287F}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

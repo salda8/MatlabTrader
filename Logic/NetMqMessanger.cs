@@ -14,7 +14,8 @@ using System.Configuration;
 
 namespace MATLAB_trader.Logic
 {
-    public class OrderManager
+    //THIS IS THE COOL PART OF THIS APPLICATION NET MQ
+    public class NetMqMessanger
     {
         private readonly string pushConnectionString;
         private readonly object pushSocketLock = new object();
@@ -28,7 +29,7 @@ namespace MATLAB_trader.Logic
         private NetMQPoller poller;
 
 
-        public OrderManager()
+        public NetMqMessanger()
         {
             var pushPort = Properties.Settings.Default.PushPort;
             if (pushPort>0)
@@ -91,29 +92,8 @@ namespace MATLAB_trader.Logic
             {
                 pushSocket = new PushSocket(pushConnectionString);
             }
-            //lock (dealerSocketLock)
-            //{
-            //    dealerSocket= new DealerSocket(dealerConnectionString);
-            //    dealerSocket.ReceiveReady += DealerSocketReceiveReadyHandler;
-            //}
-
-            var timer = new NetMQTimer(TimeSpan.FromMilliseconds(10000));
-
-            timer.Elapsed += (sender, args) =>
-            {
-                using (var ms = new MemoryStream())
-                {
-                    var equity =
-                        MyUtils.ProtoBufSerialize(
-                            new CommissionMessage() {Commission = 4, ExecutionId = "45", RealizedPnL = 4}, ms);
-                    var message = new NetMQMessage(2);
-                    message.Append(BitConverter.GetBytes((byte)MessageTypeEnum.CommissionPush));
-                    message.Append(equity);
-                    pushSocket.SendMultipartMessage(message);
-                }
-            };
-
-            poller = new NetMQPoller { pushSocket ,timer };
+           
+            poller = new NetMQPoller { pushSocket };
             poller.RunAsync();
         }
 
