@@ -91,43 +91,14 @@ namespace MATLAB_trader
                 }
             }
 
-            StartTrading();
-            //Matlab.StartTrading();
-
-            //Console.ReadKey();
-            //return 0;
-        }
-
-        public static void StartTrading()
-        {
             ConnectToIb();
-            
-            var activationContext = Type.GetTypeFromProgID("matlab.application.single");
-            var matlab = new Matlab((MLApp.MLApp)Activator.CreateInstance(activationContext));
-            matlab.StartTrading();
-
-            //while (TradingCalendar.IsTradingDay())
-            //{
-            //    //Trade.PlaceTrade(MyContracts.Contract(), 1, wrapper);
-            //    while (true)
-            //    {
-            //        while (HighResolutionDateTime.UtcNow.Second != 0)
-            //        {
-            //            Thread.Sleep(1);
-
-            //        }
-
-            //        matlab.UseMatlab();
-            //    }
-            //    Thread.Sleep(10000);
-            //}
+            new StrategyTrader().StartTrading();
         }
-
         
 
         private static void ConnectToIb()
         {
-            var orderManager = new NetMqMessanger();
+            var orderManager = new NetMqMessenger();
             orderManager.StartPushServer();
             Task.Factory.StartNew(orderManager.StartServerToUpdateEquity, TaskCreationOptions.LongRunning);
 
@@ -161,5 +132,4 @@ namespace MATLAB_trader
         }
         public static Dictionary<string, int> LoadedSymbolsDictionary { get; set; }
     }
-
 }

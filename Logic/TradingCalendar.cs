@@ -22,6 +22,11 @@ namespace MATLAB_trader.Logic
             return true;
         }
 
+        public static bool IsTradingHour()
+        {
+            return true;
+        }
+
         public static void RolloverContract(ContractExt contracts)
         {
         }

@@ -14,7 +14,7 @@ namespace MATLAB_trader.Logic
 {
     public class IbClient : EWrapper
     {
-        private readonly NetMqMessanger netMqMessanger;
+        private readonly NetMqMessenger netMqMessanger;
         public static List<IbClient> WrapperList = new List<IbClient>();
         public static bool Firstime = true;
         public static double LastPrice;
@@ -22,7 +22,7 @@ namespace MATLAB_trader.Logic
         private readonly TaskFactory tf = new TaskFactory();
         private EReaderMonitorSignal signal;
 
-        public IbClient(NetMqMessanger netMqMessanger)
+        public IbClient(NetMqMessenger netMqMessanger)
         {
             this.netMqMessanger = netMqMessanger;
             Signal = new EReaderMonitorSignal();
@@ -286,7 +286,7 @@ namespace MATLAB_trader.Logic
                               ", LastFillPrice: " + lastFillPrice + ", ClientId: " + clientId + ", WhyHeld: " + whyHeld +
                               "\n");
             tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetOrderStatusMessage(orderId, status, filled, remaining,
-                        avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld), MessageTypeEnum.OrderStatusPush));
+                        avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld), GeneralRequestMessageType.OrderStatusPush));
         }
 
         public virtual void openOrder(int orderId, Contract contract, Order order, OrderState orderState)
@@ -294,7 +294,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("OpenOrder. ID: " + orderId + ", " + contract.Symbol + ", " + contract.SecType + " @ " +
                               contract.Exchange + ": " + order.Action + ", " + order.OrderType + " " +
                               order.TotalQuantity + ", " + orderState.Status + "\n");
-            tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetOpenOrder(contract, order, orderState), MessageTypeEnum.OpenOrderPush));
+            tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetOpenOrder(contract, order, orderState), GeneralRequestMessageType.OpenOrderPush));
         }
 
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
@@ -302,7 +302,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("ExecDetails. " + reqId + " - " + contract.Symbol + ", " + contract.SecType + ", " +
                               contract.Currency + " - " + execution.ExecId + ", " + execution.OrderId + ", " +
                               execution.Shares + "\n");
-            tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution), MessageTypeEnum.ExecutionPush));
+            tf.StartNew(() => netMqMessanger.HandleMessages(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution), GeneralRequestMessageType.ExecutionPush));
         }
 
         public virtual void commissionReport(CommissionReport commissionReport)
@@ -310,7 +310,7 @@ namespace MATLAB_trader.Logic
             Console.WriteLine("CommissionReport. " + commissionReport.ExecId + " - " + commissionReport.Commission + " " +
                               commissionReport.Currency + " RPNL " + commissionReport.RealizedPNL + "\n");
 
-            tf.StartNew( () =>netMqMessanger.HandleMessages(commissionReport.Map<CommissionReport, CommissionMessage>(), MessageTypeEnum.CommissionPush));
+            tf.StartNew(() => netMqMessanger.HandleMessages(commissionReport.Map<CommissionReport, CommissionMessage>(), GeneralRequestMessageType.CommissionPush));
 
         }
 

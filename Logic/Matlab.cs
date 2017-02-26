@@ -61,7 +61,7 @@ namespace MATLAB_trader.Logic
         /// <summary>
         ///     Uses the matlab.
         /// </summary>
-        public void UseMatlab(DateTime dt)
+        public void Execute(DateTime dt)
         {
             matlabValues.Clear();
 
@@ -341,7 +341,7 @@ namespace MATLAB_trader.Logic
                     {
                         var msg = "Barcheck failed on " + list[0].Symbol + "/" + list[0].TimeFrame + "||" + DateTime.Now;
                         Console.WriteLine(msg);
-                        NetMqMessanger.HandleErrorMsg(8888, msg, wrapper.AccountNumber);
+                        NetMqMessenger.HandleErrorMsg(8888, msg, wrapper.AccountNumber);
                     }
                     else
                     {
@@ -435,7 +435,7 @@ namespace MATLAB_trader.Logic
 
             trade = Db.GetTradeVariableOnStartUp();
             
-            UseMatlab(DateTime.Now.AddHours(-7));
+            Execute(DateTime.Now.AddHours(-7));
 
             while (true)
             {
@@ -456,7 +456,7 @@ namespace MATLAB_trader.Logic
                                 if (trade)
                                 {
                                     Thread.Sleep(1200);
-                                    Parallel.Invoke((() => UseMatlab(DateTime.Now.AddHours(-7))));
+                                    Parallel.Invoke((() => Execute(DateTime.Now.AddHours(-7))));
 
                                     trade = false;
                                     lastUpdate = DateTime.UtcNow;
@@ -476,7 +476,7 @@ namespace MATLAB_trader.Logic
                         if (trade)
                         {
                             Thread.Sleep(1200);
-                            Parallel.Invoke((() => UseMatlab(DateTime.Now.AddHours(-7))));
+                            Parallel.Invoke((() => Execute(DateTime.Now.AddHours(-7))));
 
                             trade = false;
                             lastUpdate = DateTime.UtcNow;

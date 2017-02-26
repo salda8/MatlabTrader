@@ -84,7 +84,7 @@
     <Compile Include="Data\MyContracts.cs" />
     <Compile Include="Logic\IBClient.cs" />
     <Compile Include="Logic\Matlab.cs" />
-    <Compile Include="Logic\NetMqMessanger.cs" />
+    <Compile Include="Logic\NetMqMessenger.cs" />
     <Compile Include="Logic\Trade.cs" />
     <Compile Include="Logic\TradingCalendar.cs" />
     <Compile Include="MappingConfiguration.cs" />
@@ -98,6 +98,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="StrategyTrader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -112,10 +113,6 @@
     <Content Include="Common\Resources\CSharpAPI.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\qdms\EntityData\EntityData.csproj">
-      <Project>{aea3426e-81b7-4c7e-a1cc-29743229cdcc}</Project>
-      <Name>EntityData</Name>
-    </ProjectReference>
     <ProjectReference Include="..\qdms\QDMS\QDMS.csproj">
       <Project>{7ea40d71-4d14-4b86-b07d-932959fa0d20}</Project>
       <Name>QDMS</Name>

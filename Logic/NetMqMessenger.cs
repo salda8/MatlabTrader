@@ -15,7 +15,7 @@ using System.Configuration;
 namespace MATLAB_trader.Logic
 {
     //THIS IS THE COOL PART OF THIS APPLICATION NET MQ
-    public class NetMqMessanger
+    public class NetMqMessenger
     {
         private readonly string pushConnectionString;
         private readonly object pushSocketLock = new object();
@@ -29,7 +29,7 @@ namespace MATLAB_trader.Logic
         private NetMQPoller poller;
 
 
-        public NetMqMessanger()
+        public NetMqMessenger()
         {
             var pushPort = Properties.Settings.Default.PushPort;
             if (pushPort>0)
@@ -242,7 +242,7 @@ namespace MATLAB_trader.Logic
 
         public static TradeDirection ConvertFromString(string side) => side == "BUY" ? TradeDirection.Long : TradeDirection.Short;
 
-        public void HandleMessages(object objectToSend, MessageTypeEnum messageType)
+        public void HandleMessages(object objectToSend, GeneralRequestMessageType messageType)
         {
             using (var ms = new MemoryStream())
             {
