@@ -12,7 +12,7 @@ namespace MATLAB_trader.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.0.1.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.1.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -49,7 +49,7 @@ namespace MATLAB_trader.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("5700")]
+        [global::System.Configuration.DefaultSettingValueAttribute("5402")]
         public int PushPort {
             get {
                 return ((int)(this["PushPort"]));
@@ -61,13 +61,145 @@ namespace MATLAB_trader.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("5556")]
+        [global::System.Configuration.DefaultSettingValueAttribute("5401")]
         public int DealerPort {
             get {
                 return ((int)(this["DealerPort"]));
             }
             set {
                 this["DealerPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5556")]
+        public int RealTimeDataServerRequestPort {
+            get {
+                return ((int)(this["RealTimeDataServerRequestPort"]));
+            }
+            set {
+                this["RealTimeDataServerRequestPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5557")]
+        public int RealTimeDataServerPublishPort {
+            get {
+                return ((int)(this["RealTimeDataServerPublishPort"]));
+            }
+            set {
+                this["RealTimeDataServerPublishPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5555")]
+        public int HistoricalServerPort {
+            get {
+                return ((int)(this["HistoricalServerPort"]));
+            }
+            set {
+                this["HistoricalServerPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5554")]
+        public int MessagesServerPullPort {
+            get {
+                return ((int)(this["MessagesServerPullPort"]));
+            }
+            set {
+                this["MessagesServerPullPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5553")]
+        public int MessagesServerPushPort {
+            get {
+                return ((int)(this["MessagesServerPushPort"]));
+            }
+            set {
+                this["MessagesServerPushPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5552")]
+        public int EquityUpdateServerRouterPort {
+            get {
+                return ((int)(this["EquityUpdateServerRouterPort"]));
+            }
+            set {
+                this["EquityUpdateServerRouterPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("4001")]
+        public int ibPort {
+            get {
+                return ((int)(this["ibPort"]));
+            }
+            set {
+                this["ibPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("DU15183")]
+        public string AccountNumber {
+            get {
+                return ((string)(this["AccountNumber"]));
+            }
+            set {
+                this["AccountNumber"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("localhost")]
+        public string host {
+            get {
+                return ((string)(this["host"]));
+            }
+            set {
+                this["host"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1006")]
+        public int AccountID {
+            get {
+                return ((int)(this["AccountID"]));
+            }
+            set {
+                this["AccountID"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Logs\\")]
+        public string logDirectory {
+            get {
+                return ((string)(this["logDirectory"]));
+            }
+            set {
+                this["logDirectory"] = value;
             }
         }
     }

@@ -11,7 +11,6 @@ namespace MATLAB_trader.Logic
             var dt = DateTime.Now;
             if (dt.DayOfWeek == DayOfWeek.Saturday || dt.DayOfWeek == DayOfWeek.Sunday)
             {
-                //Data.Clearticklists();
                return false;
             }
             if (Properties.Settings.Default.TradingOnBankingHoliday)

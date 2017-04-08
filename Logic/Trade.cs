@@ -7,52 +7,52 @@ namespace MATLAB_trader.Logic
 {
     public class Trade
     {
-        private static  Contract futureComboContract = new Contract
+        private static readonly Contract futureComboContract = new Contract
         {
-            Symbol = "ES",
+            Symbol = "GC",
             SecType = "FUT",
-            Exchange = "GLOBEX",
+            Exchange = "NYMEX",
             Currency = "USD",
-            LastTradeDateOrContractMonth = "201703"
+            LastTradeDateOrContractMonth = "201705"
         };
 
-        
+
+
+        //public static void PlaceTrade(Contract contract, int i, IbClient wrapper)
+        //{
+        //    if (i >= 1)
+        //    {
+        //        MakeLmtTrade(wrapper);
+        //        Thread.Sleep(10000);
+        //        MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
+        //        Thread.Sleep(10000);
+        //        MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
+        //        Thread.Sleep(10000);
+        //        wrapper.ClientSocket.reqGlobalCancel();
+
+        //    }
+        //    else if (i <= -1)
+        //    {
+        //        MakeLmtTrade(wrapper);
+        //        Thread.Sleep(10000);
+        //        MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
+        //        Thread.Sleep(10000);
+        //        MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
+        //        Thread.Sleep(10000);
+        //        wrapper.ClientSocket.reqGlobalCancel();
+
+        //    }
+        //}
 
         /// <summary>
         ///     Trades the specified contract.
         /// </summary>
         /// <param name="contract">The contract.</param>
-        /// <param name="i">The i.</param>
+        /// <param name="direction"></param>
         /// <param name="wrapper"></param>
-        public static void PlaceTrade(Contract contract, int i, IbClient wrapper)
-        {
-            if (i >= 1)
-            {
-                MakeLmtTrade(wrapper);
-                Thread.Sleep(10000);
-                MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
-                Thread.Sleep(10000);
-                MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
-                Thread.Sleep(10000);
-                wrapper.ClientSocket.reqGlobalCancel();
-
-
-            }
-            else if (i <= -1)
-            {
-                MakeLmtTrade(wrapper);
-                Thread.Sleep(10000);
-                MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
-                Thread.Sleep(10000);
-                MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
-                Thread.Sleep(10000);
-                wrapper.ClientSocket.reqGlobalCancel();
-
-
-            }
-        }
-
-        public static void MakeMktTrade(Contract contract, string direction, string type, int quantity, IbClient wrapper)
+        /// <param name="type"></param>
+        /// <param name="quantity"></param>
+        public static void MakeMktTrade(string direction , IbClient wrapper, Contract contract = null, string type = "MKT", double quantity = 1)
         {
             var order = new Order
             {
@@ -65,6 +65,9 @@ namespace MATLAB_trader.Logic
             };
 
             wrapper.ClientSocket.placeOrder(order.OrderId, FutureComboContract(), order);
+            //order.Action = direction == "SELL" ? "BUY" : "SELL";
+            //order.OrderId = wrapper.NextOrderId++;
+            //wrapper.ClientSocket.placeOrder(order.OrderId, FutureComboContract(), order);
             //Thread.Sleep(5000);
         }
         public static Contract FutureComboContract() => futureComboContract;

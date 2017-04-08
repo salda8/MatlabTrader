@@ -96,7 +96,6 @@ namespace MATLAB_trader.Data
                 {
                     while (reader.Read())
                     {
-                        var price = 0d;
                         var open = reader.GetDouble(0)*1d;
                         var high = reader.GetDouble(1)*1d;
                         var low = reader.GetDouble(2)*1d;
@@ -152,6 +151,7 @@ namespace MATLAB_trader.Data
         {
             var check = false;
             var lastBar = barlist[barlist.Count - 1].BarDateTime;
+            // ReSharper disable once PossibleLossOfFraction
             if (lastBar.AddHours(tf/60).Hour == dt.Hour)
             {
                 check = true;

@@ -9,10 +9,43 @@
       <Value Profile="(Default)">10000</Value>
     </Setting>
     <Setting Name="PushPort" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">5700</Value>
+      <Value Profile="(Default)">5402</Value>
     </Setting>
     <Setting Name="DealerPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5401</Value>
+    </Setting>
+    <Setting Name="RealTimeDataServerRequestPort" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5556</Value>
+    </Setting>
+    <Setting Name="RealTimeDataServerPublishPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5557</Value>
+    </Setting>
+    <Setting Name="HistoricalServerPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5555</Value>
+    </Setting>
+    <Setting Name="MessagesServerPullPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5554</Value>
+    </Setting>
+    <Setting Name="MessagesServerPushPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5553</Value>
+    </Setting>
+    <Setting Name="EquityUpdateServerRouterPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5552</Value>
+    </Setting>
+    <Setting Name="ibPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">4001</Value>
+    </Setting>
+    <Setting Name="AccountNumber" Type="System.String" Scope="User">
+      <Value Profile="(Default)">DU15183</Value>
+    </Setting>
+    <Setting Name="host" Type="System.String" Scope="User">
+      <Value Profile="(Default)">localhost</Value>
+    </Setting>
+    <Setting Name="AccountID" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1006</Value>
+    </Setting>
+    <Setting Name="logDirectory" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\Logs\</Value>
     </Setting>
   </Settings>
 </SettingsFile>

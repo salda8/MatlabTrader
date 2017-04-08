@@ -10,13 +10,16 @@ using MATLAB_trader.Data.DataType;
 using MATLAB_trader.Logic;
 using NDesk.Options;
 using System.Configuration;
-using QDMS;
+using MATLAB_trader.Properties;
+using NLog;
+using NLog.Targets;
+
 
 namespace MATLAB_trader
 {
     public class Program
     {
-        public static int AccountID=1;
+        public static int AccountID=Settings.Default.AccountID;
         private static IbClient wrapper;
 
         public static void Main(string[] args)
@@ -90,40 +93,61 @@ namespace MATLAB_trader
                     //                  " on this matlab function:" + Matlab.MatlabFunction);
                 }
             }
-
+            SetAndCreateLogDirectory();
+            MappingConfiguration.Register();
             ConnectToIb();
-            new StrategyTrader().StartTrading();
+            new StrategyTrader(wrapper).StartTrading();
         }
-        
 
+        private static void SetAndCreateLogDirectory()
+        {
+            if (Directory.Exists(Properties.Settings.Default.logDirectory))
+            {
+                ((FileTarget) LogManager.Configuration.FindTargetByName("logfile")).FileName =
+                    Properties.Settings.Default.logDirectory + "Log.log";
+
+            }
+            else
+            {
+                Directory.CreateDirectory(Properties.Settings.Default.logDirectory);
+                ((FileTarget)LogManager.Configuration.FindTargetByName("logfile")).FileName =
+                    Properties.Settings.Default.logDirectory + "Log.log";
+            }            
+        }
         private static void ConnectToIb()
         {
-            var orderManager = new NetMqMessenger();
-            orderManager.StartPushServer();
-            Task.Factory.StartNew(orderManager.StartServerToUpdateEquity, TaskCreationOptions.LongRunning);
+            RequestsClient.RequestsClient client = new RequestsClient.RequestsClient(Program.AccountID,
+                Settings.Default.EquityUpdateServerRouterPort, Settings.Default.MessagesServerPullPort, Settings.Default.AccountNumber);
+            client.StartPushServer();
 
-            //wrapper = new IbClient(orderManager);
-            //EClientSocket clientSocket = wrapper.ClientSocket;
-            //EReaderSignal readerSignal = wrapper.Signal;
-            
-            //clientSocket.eConnect("127.0.0.1", 7496, 0);
-            //clientSocket.reqAllOpenOrders();
-            //clientSocket.reqPositions();
-          
-            ////Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
-            //var reader = new EReader(clientSocket, readerSignal);
-            //reader.Start();
-            ////Once the messages are in the queue, an additional thread need to fetch them
-            //new Thread(() =>
-            //{
-            //    while (clientSocket.IsConnected())
-            //    {
-            //        readerSignal.waitForSignal();
-            //        reader.processMsgs();
-            //    }
-            //}) {IsBackground = true}.Start();
+            wrapper = new IbClient(client);
+            EClientSocket clientSocket = wrapper.ClientSocket;
+            EReaderSignal readerSignal = wrapper.Signal;
 
-            //while (wrapper.NextOrderId <= 0) { }
+            clientSocket.eConnect("127.0.0.1", Settings.Default.ibPort, 0);
+            clientSocket.reqAllOpenOrders();
+            clientSocket.reqPositions();
+           
+            //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
+            var reader = new EReader(clientSocket, readerSignal);
+            reader.Start();
+            //Once the messages are in the queue, an additional thread need to fetch them
+            new Thread(() =>
+            {
+                while (clientSocket.IsConnected())
+                {
+                    readerSignal.waitForSignal();
+                    reader.processMsgs();
+                }
+            })
+            { IsBackground = true }.Start();
+
+            while (wrapper.NextOrderId <= 0) { }
+
+            clientSocket.reqGlobalCancel();
+            clientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);
+
+
         }
 
         public static int LoadedSymbolInstrumentID(string messageContractSymbol)

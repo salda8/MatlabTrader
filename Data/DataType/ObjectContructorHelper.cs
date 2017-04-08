@@ -1,6 +1,6 @@
 using System;
+using Common;
 using IBApi;
-using QDMS;
 
 namespace MATLAB_trader.Data.DataType
 {

@@ -8,15 +8,15 @@ using MATLAB_trader.Data.Matlab;
 
 namespace MATLAB_trader.Logic
 {
-    internal class Matlab
+    internal class MatlabStrategy : IStrategy
     {
         private readonly MLApp.MLApp matlab;
 
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="Matlab" /> class.
+        ///     Initializes a new instance of the <see cref="MatlabStrategy" /> class.
         /// </summary>
-        public Matlab(MLApp.MLApp matlab)
+        public MatlabStrategy(MLApp.MLApp matlab)
         {
             this.matlab = matlab;
             matlab.Visible = 1;
@@ -61,7 +61,7 @@ namespace MATLAB_trader.Logic
         /// <summary>
         ///     Uses the matlab.
         /// </summary>
-        public void Execute(DateTime dt)
+        public void Execute()
         {
             matlabValues.Clear();
 
@@ -70,6 +70,7 @@ namespace MATLAB_trader.Logic
             foreach (var wrapper in IbClient.WrapperList)
             {
                 //NetMqMessanger.SelectTradesFromDatabase(wrapper.AccountNumber);
+                var dt = DateTime.Now;
                 GetAndPutWorkSpaceData(dt, wrapper);
                 //Console.WriteLine(_eur.Count);
                 //PutWorkSpaceData();
@@ -99,7 +100,7 @@ namespace MATLAB_trader.Logic
                                     EurContracts = (int)d.GetValue(i, j);
                                     break;
                                 }
-                                Trade.PlaceTrade(MyContracts.GetContract("EUR"), EurContracts, wrapper);
+                                //Trade.PlaceTrade(MyContracts.GetContract("EUR"), EurContracts, wrapper);
                                 EurContracts = (int)d.GetValue(i, j);
                                 break;
 
@@ -118,7 +119,7 @@ namespace MATLAB_trader.Logic
                                     GbpContracts = (int)d.GetValue(i, j);
                                     break;
                                 }
-                                Trade.PlaceTrade(MyContracts.GetContract("GBP"), GbpContracts, wrapper);
+                                //Trade.PlaceTrade(MyContracts.GetContract("GBP"), GbpContracts, wrapper);
                                 GbpContracts = (int)d.GetValue(i, j);
                                 break;
 
@@ -136,7 +137,7 @@ namespace MATLAB_trader.Logic
                                     JpyContracts = (int)d.GetValue(i, j);
                                     break;
                                 }
-                                Trade.PlaceTrade(MyContracts.GetContract("JPY"), JpyContracts, wrapper);
+                                //Trade.PlaceTrade(MyContracts.GetContract("JPY"), JpyContracts, wrapper);
                                 JpyContracts = (int)d.GetValue(i, j);
                                 break;
 
@@ -154,7 +155,7 @@ namespace MATLAB_trader.Logic
                                     AudContracts = (int)d.GetValue(i, j);
                                     break;
                                 }
-                                Trade.PlaceTrade(MyContracts.GetContract("AUD"), AudContracts, wrapper);
+                                //Trade.PlaceTrade(MyContracts.GetContract("AUD"), AudContracts, wrapper);
                                 AudContracts = (int)d.GetValue(i, j);
                                 break;
 
@@ -172,7 +173,7 @@ namespace MATLAB_trader.Logic
                                     CadContracts = (int)d.GetValue(i, j);
                                     break;
                                 }
-                                Trade.PlaceTrade(MyContracts.GetContract("CAD"), CadContracts, wrapper);
+                                //Trade.PlaceTrade(MyContracts.GetContract("CAD"), CadContracts, wrapper);
                                 CadContracts = (int)d.GetValue(i, j);
                                 break;
                         }
@@ -215,7 +216,7 @@ namespace MATLAB_trader.Logic
                     contracts = (int)result.GetValue(i, j) - contracts;
                     if (contracts != 0)
                     {
-                        Trade.PlaceTrade(MyContracts.GetContract(symbol), contracts, wrapper);
+                        //Trade.PlaceTrade(MyContracts.GetContract(symbol), contracts, wrapper);
                     }
                     matlabValues.Add(new MatlabNumberOfContracts
                     {
@@ -341,7 +342,7 @@ namespace MATLAB_trader.Logic
                     {
                         var msg = "Barcheck failed on " + list[0].Symbol + "/" + list[0].TimeFrame + "||" + DateTime.Now;
                         Console.WriteLine(msg);
-                        NetMqMessenger.HandleErrorMsg(8888, msg, wrapper.AccountNumber);
+                        //NetMqMessenger.HandleErrorMsg(8888, msg, wrapper.AccountNumber);
                     }
                     else
                     {
@@ -365,7 +366,7 @@ namespace MATLAB_trader.Logic
                 x++;
             }
 
-            matlab.PutWorkspaceData("Equity", "base",new[] {wrapper.Equity*1d});
+            matlab.PutWorkspaceData("Equity", "base",new[] {wrapper.Equity});
             if (matlabParametersList.Count > 0)
             {
                 foreach (var matlabParameterse in matlabParametersList)
@@ -435,7 +436,7 @@ namespace MATLAB_trader.Logic
 
             trade = Db.GetTradeVariableOnStartUp();
             
-            Execute(DateTime.Now.AddHours(-7));
+            Execute();
 
             while (true)
             {
@@ -456,7 +457,7 @@ namespace MATLAB_trader.Logic
                                 if (trade)
                                 {
                                     Thread.Sleep(1200);
-                                    Parallel.Invoke((() => Execute(DateTime.Now.AddHours(-7))));
+                                    Parallel.Invoke((Execute));
 
                                     trade = false;
                                     lastUpdate = DateTime.UtcNow;
@@ -476,7 +477,7 @@ namespace MATLAB_trader.Logic
                         if (trade)
                         {
                             Thread.Sleep(1200);
-                            Parallel.Invoke((() => Execute(DateTime.Now.AddHours(-7))));
+                            Parallel.Invoke((Execute));
 
                             trade = false;
                             lastUpdate = DateTime.UtcNow;

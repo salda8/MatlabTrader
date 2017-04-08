@@ -7,16 +7,29 @@ namespace MATLAB_trader
 {
     public class StrategyTrader
     {
-        private Matlab matlab;
-        public StrategyTrader()
+        private IStrategy strategy;
+        public StrategyTrader(IbClient wrapper, bool useMatlab = false)
         {
-            InitializeMatlab();
+
+            if (useMatlab)
+            {
+                InitMatlabStrategy();
+            }
+            else
+            {
+                InitNetStrategy(wrapper);
+            }
         }
 
-        private void InitializeMatlab()
+        private void InitNetStrategy(IbClient wrapper)
+        {
+            strategy = new SimplestNetStrategy(wrapper);
+        }
+
+        private void InitMatlabStrategy()
         {
             var activationContext = Type.GetTypeFromProgID("matlab.application.single");
-            matlab = new Matlab((MLApp.MLApp)Activator.CreateInstance(activationContext));
+            strategy = new MatlabStrategy((MLApp.MLApp)Activator.CreateInstance(activationContext));
             
            
         }
@@ -33,7 +46,8 @@ namespace MATLAB_trader
 
                     }
 
-                    matlab.Execute(DateTime.Now);
+                    strategy.Execute();
+                    Thread.Sleep(10000);
                 }
                 Thread.Sleep(10000);
             }

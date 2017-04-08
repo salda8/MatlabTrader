@@ -56,8 +56,11 @@
       <HintPath>packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NetMQ, Version=4.0.0.0, Culture=neutral, PublicKeyToken=a6decef4ddc58b3a, processorArchitecture=MSIL">
-      <HintPath>packages\NetMQ.4.0.0-rc5\lib\net40\NetMQ.dll</HintPath>
+    <Reference Include="NetMQ, Version=4.0.0.1, Culture=neutral, PublicKeyToken=a6decef4ddc58b3a, processorArchitecture=MSIL">
+      <HintPath>packages\NetMQ.4.0.0.1\lib\net40\NetMQ.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>packages\NLog.4.4.5\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="protobuf-net, Version=2.1.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <HintPath>packages\protobuf-net.2.1.0\lib\net451\protobuf-net.dll</HintPath>
@@ -82,9 +85,10 @@
     <Compile Include="Data\Db.cs" />
     <Compile Include="Data\Matlab\MatlabNumberOfContracts.cs" />
     <Compile Include="Data\MyContracts.cs" />
-    <Compile Include="Logic\IBClient.cs" />
-    <Compile Include="Logic\Matlab.cs" />
-    <Compile Include="Logic\NetMqMessenger.cs" />
+    <Compile Include="IBClient.cs" />
+    <Compile Include="Logic\IStrategy.cs" />
+    <Compile Include="Logic\MatlabStrategy.cs" />
+    <Compile Include="Logic\SimplestNetStrategy.cs" />
     <Compile Include="Logic\Trade.cs" />
     <Compile Include="Logic\TradingCalendar.cs" />
     <Compile Include="MappingConfiguration.cs" />
@@ -102,6 +106,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <Content Include="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="NLog.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -113,12 +123,6 @@
     <Content Include="Common\Resources\CSharpAPI.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\qdms\QDMS\QDMS.csproj">
-      <Project>{7ea40d71-4d14-4b86-b07d-932959fa0d20}</Project>
-      <Name>QDMS</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <COMReference Include="MLApp">
       <Guid>{C36E46AB-6A81-457B-9F91-A7719A06287F}</Guid>
       <VersionMajor>1</VersionMajor>
@@ -128,6 +132,20 @@
       <Isolated>False</Isolated>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\qdms\Common\Common.csproj">
+      <Project>{7EA40D71-4D14-4B86-B07D-932959FA0D20}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\qdms\DataRequestClient\DataRequestsClient.csproj">
+      <Project>{C8C75909-6503-481D-8985-45BB91A88487}</Project>
+      <Name>DataRequestsClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\qdms\RequestsClient\RequestsClient.csproj">
+      <Project>{A2306B33-47B8-455F-A1D7-2801AC358CA9}</Project>
+      <Name>RequestsClient</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
