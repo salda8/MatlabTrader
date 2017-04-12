@@ -1,4 +1,4 @@
-﻿namespace MATLAB_trader.Data.Matlab
+﻿namespace StrategyTrader.Matlab
 {
     public abstract class MatlabValue
     {

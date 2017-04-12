@@ -1,10 +1,12 @@
 using System;
 using Common;
+using Common.EntityModels;
 using IBApi;
+using StrategyTrader.Logic;
 
-namespace MATLAB_trader.Data.DataType
+namespace StrategyTrader
 {
-    public static class ObjectContructorHelper
+    public static class ObjectConstructorHelper
     {
         public static ExecutionMessage GetExecutionMessage(int reqId, Contract contract,
                                                          Execution execution)
@@ -14,7 +16,7 @@ namespace MATLAB_trader.Data.DataType
                 RequestId = reqId,
                 ExecutionId = execution.ExecId,
                 PermanentId = execution.PermId,
-                InstrumentID = GetInstrumentId(contract.Symbol),
+                InstrumentID = SimplestNetStrategy.InstrumentId,
                 AccountID = Program.AccountID,
                 Quantity = execution.CumQty,
                 Side = execution.Side,
@@ -30,8 +32,8 @@ namespace MATLAB_trader.Data.DataType
                    {
                 PermanentId = order.PermId,
                        AccountID = Program.AccountID,
-                        InstrumentID = GetInstrumentId(contract.LocalSymbol),
-                        Status = orderState.Status,
+                        InstrumentID = SimplestNetStrategy.InstrumentId,
+                Status = orderState.Status,
                      LimitPrice = (decimal) order.LmtPrice,
                        Quantity = (decimal) order.TotalQuantity,
                        Type = order.OrderType
@@ -59,9 +61,6 @@ namespace MATLAB_trader.Data.DataType
                    };
         }
 
-        private static int GetInstrumentId(string srcDescription)
-        {
-            return 1;
-        }
+        
     }
 }
