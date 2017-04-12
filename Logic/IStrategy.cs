@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MATLAB_trader.Logic
+﻿namespace StrategyTrader.Logic
 {
     internal interface IStrategy
     {

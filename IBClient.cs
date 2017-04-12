@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using Common;
+using Common.EntityModels;
+using Common.Enums;
 using ExpressMapper.Extensions;
 using IBApi;
-using MATLAB_trader.Data.DataType;
-using MATLAB_trader.Properties;
 using NLog;
+using StrategyTrader.Properties;
 
-namespace MATLAB_trader
+namespace StrategyTrader
 {
     public class IbClient : EWrapper
     {
@@ -103,7 +104,7 @@ namespace MATLAB_trader
                               + ", AverageFillPrice: " + avgFillPrice + ", PermanentId: " + permId + ", ParentId: " + parentId +
                               ", LastFillPrice: " + lastFillPrice + ", ClientId: " + clientId + ", WhyHeld: " + whyHeld +
                               "\n");
-            Client.PushGeneralRequestMesssage(ObjectContructorHelper.GetOrderStatusMessage(orderId, status, filled, remaining,
+            Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOrderStatusMessage(orderId, status, filled, remaining,
                         avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld), GeneralRequestMessageType.OrderStatusPush);
         }
 
@@ -114,7 +115,7 @@ namespace MATLAB_trader
                               order.TotalQuantity + ", " + orderState.Status + "\n");
             if (lastOrderId == orderId) return; //for some reason IB sends 3 IB messages with status filled
             lastOrderId = orderId;
-            Client.PushGeneralRequestMesssage(ObjectContructorHelper.GetOpenOrder(contract, order, orderState), GeneralRequestMessageType.OpenOrderPush);
+            Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOpenOrder(contract, order, orderState), GeneralRequestMessageType.OpenOrderPush);
         }
 
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
@@ -122,7 +123,7 @@ namespace MATLAB_trader
             logger.Info("ExecDetails. " + reqId + " - " + contract.Symbol + ", " + contract.SecType + ", " +
                               contract.Currency + " - " + execution.ExecId + ", " + execution.OrderId + ", " +
                               execution.Shares + "\n");
-           Client.PushGeneralRequestMesssage(ObjectContructorHelper.GetExecutionMessage(reqId, contract, execution), GeneralRequestMessageType.ExecutionPush);
+           Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetExecutionMessage(reqId, contract, execution), GeneralRequestMessageType.ExecutionPush);
         }
 
         public virtual void commissionReport(CommissionReport commissionReport)
