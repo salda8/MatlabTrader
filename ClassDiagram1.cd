@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="MATLAB_trader.IbClient" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="5.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>eoGA4gQAgACXQCAmBwEA6AIIAEsNQAGJKgCEWBggNSQ=</HashCode>
+      <FileName>IBClient.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.174" Collapsed="true" />
+  </Class>
+  <Class Name="MATLAB_trader.MappingConfiguration" Collapsed="true">
+    <Position X="7" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>MappingConfiguration.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.Program" Collapsed="true">
+    <Position X="5.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAQAQKAgAAAAAAAAAAIAAAAAAABAAAAAA=</HashCode>
+      <FileName>Program.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.StrategyTrader" Collapsed="true">
+    <Position X="5.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>StrategyTrader.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.Logic.SimplestNetStrategy" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="8.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAgAQAAAABgAAAAAgAIAAAAAAQBAAAAEA=</HashCode>
+      <FileName>Logic\SimplestNetStrategy.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="MATLAB_trader.Logic.Trade" Collapsed="true">
+    <Position X="7" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAIAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIA=</HashCode>
+      <FileName>Logic\Trade.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.Logic.TradingCalendar" Collapsed="true">
+    <Position X="8.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAAAAAAAAAAIAAAAAAAIAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Logic\TradingCalendar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.Data.Matlab.MatlabNumberOfContracts" Collapsed="true">
+    <Position X="0.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAA=</HashCode>
+      <FileName>Matlab\MatlabNumberOfContracts.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.Data.Matlab.MatlabParameter" Collapsed="true">
+    <Position X="2.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAA=</HashCode>
+      <FileName>Matlab\MatlabParameters.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.Data.Matlab.MatlabValue" Collapsed="true">
+    <Position X="1.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAACgAAAAGEA=</HashCode>
+      <FileName>Matlab\MatlabValue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MATLAB_trader.Data.ObjectConstructorHelper" Collapsed="true">
+    <Position X="8.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAgAA=</HashCode>
+      <FileName>ObjectContructorHelper.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="StrategyTrader.Properties.Settings" Collapsed="true">
+    <Position X="7" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAACAAQAAAQgEAAIgAAIAAAAAgBAAAAACgAgAAhAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="MATLAB_trader.Logic.IStrategy" Collapsed="true">
+    <Position X="5.25" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAQAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Logic\IStrategy.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="MATLAB_trader.Data.Matlab.MatlabType" Collapsed="true">
+    <Position X="5.25" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAEAAAAAAAAAAAQAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Matlab\MatlabType.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

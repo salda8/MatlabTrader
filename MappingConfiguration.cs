@@ -1,9 +1,9 @@
 ﻿using Common;
+using Common.EntityModels;
 using ExpressMapper;
 using IBApi;
 
-
-namespace MATLAB_trader
+namespace StrategyTrader
 {
     public class MappingConfiguration
     {

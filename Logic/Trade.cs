@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading;
 using IBApi;
 
-namespace MATLAB_trader.Logic
+namespace StrategyTrader.Logic
 {
     public class Trade
     {
@@ -15,8 +13,6 @@ namespace MATLAB_trader.Logic
             Currency = "USD",
             LastTradeDateOrContractMonth = "201705"
         };
-
-
 
         //public static void PlaceTrade(Contract contract, int i, IbClient wrapper)
         //{
@@ -52,7 +48,7 @@ namespace MATLAB_trader.Logic
         /// <param name="wrapper"></param>
         /// <param name="type"></param>
         /// <param name="quantity"></param>
-        public static void MakeMktTrade(string direction , IbClient wrapper, Contract contract = null, string type = "MKT", double quantity = 1)
+        public static void MakeMktTrade(string direction, IbClient wrapper, Contract contract = null, string type = "MKT", double quantity = 1)
         {
             var order = new Order
             {
@@ -70,10 +66,11 @@ namespace MATLAB_trader.Logic
             //wrapper.ClientSocket.placeOrder(order.OrderId, FutureComboContract(), order);
             //Thread.Sleep(5000);
         }
+
         public static Contract FutureComboContract() => futureComboContract;
 
-        public static void MakeLmtTrade( 
-            IbClient wrapper, double price=3000, Contract contract=null, int quantity=1, string direction="SELL", string type= "LMT")
+        public static void MakeLmtTrade(
+            IbClient wrapper, double price = 3000, Contract contract = null, int quantity = 1, string direction = "SELL", string type = "LMT")
         {
             var order = new Order
             {

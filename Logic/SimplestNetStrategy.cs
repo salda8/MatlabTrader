@@ -1,39 +1,52 @@
-﻿using MATLAB_trader.Properties;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Common;
+using Common.EntityModels;
+using Common.Enums;
+using Common.EventArguments;
+using Common.Requests;
+using StrategyTrader.Properties;
 
-namespace MATLAB_trader.Logic
+namespace StrategyTrader.Logic
 {
     internal class SimplestNetStrategy : IStrategy
     {
         private readonly IbClient wrapper;
-        private DataRequestClient.DataRequestClient client;
+        private readonly DataRequestClient.DataRequestClient client;
         private List<OHLCBar> data;
 
-        private HistoricalDataRequest historicalDataRequest = new HistoricalDataRequest()
+        public static int InstrumentId => instrumentId==0? ( instrumentId= historicalDataRequest.Instrument.ID.Value): instrumentId;
+
+        private static HistoricalDataRequest historicalDataRequest = new HistoricalDataRequest()
         {
             Instrument =
                 new Instrument()
                 {
+                    ID=1,
                     Symbol = "GCM7",
                     UnderlyingSymbol = "GC",
                     Type = InstrumentType.Future,
                     Exchange = new Exchange { ID = 255, Name = "NYMEX", Timezone = "Eastern Standard Time" },
                     Datasource = new Datasource() { Name = "Interactive Brokers" },
-                    Currency = "USD"
+                    Currency = "USD",
+                    MinTick=Convert.ToDecimal(0.1),
+                    Multiplier=100,
+                    ValidExchanges="NYMEX",
+
+
+
                 },
             Frequency = BarSize.OneHour,
             EndingDate = DateTime.Now,
             StartingDate = DateTime.Now.AddDays(-3),
             DataLocation = DataLocation.ExternalOnly,
             RTHOnly = false,
-            SaveDataToStorage = false,
+            SaveToLocalStorage = false,
         };
 
         private int dataCount;
+        private static int instrumentId;
 
         public SimplestNetStrategy(IbClient wrapper)
         {
@@ -67,7 +80,7 @@ namespace MATLAB_trader.Logic
                 //{
                 //    Trade.MakeMktTrade("SELL", wrapper);
                 //}
-                Trade.MakeMktTrade(IsOdd(DateTime.Now.Minute) ? "BUY" : "SELL", wrapper);
+                Trade.MakeMktTrade(Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? "BUY" : "SELL", wrapper);
             }
             else
             {
@@ -76,7 +89,7 @@ namespace MATLAB_trader.Logic
 
             }
         }
-        public static bool IsOdd(int value) => value % 2 != 0;
+        
 
         private void RequestNewData() => client.RequestHistoricalData(historicalDataRequest);
 
@@ -101,6 +114,21 @@ namespace MATLAB_trader.Logic
 
         public void StartTrading()
         {
+            while (TradingCalendar.IsTradingDay())
+            {
+                while (TradingCalendar.IsTradingHour())
+                {
+                    while (HighResolutionDateTime.UtcNow.Second != 0)
+                    {
+                        Thread.Sleep(1);
+
+                    }
+
+                    Execute();
+                    Thread.Sleep(10000);
+                }
+                Thread.Sleep(10000);
+            }
         }
     }
 }

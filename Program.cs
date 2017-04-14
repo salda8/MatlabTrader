@@ -1,21 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using IBApi;
-using MATLAB_trader.Data;
-using MATLAB_trader.Data.DataType;
-using MATLAB_trader.Logic;
 using NDesk.Options;
-using System.Configuration;
-using MATLAB_trader.Properties;
 using NLog;
 using NLog.Targets;
+using StrategyTrader.Properties;
 
-
-namespace MATLAB_trader
+namespace StrategyTrader
 {
     public class Program
     {
@@ -80,43 +73,31 @@ namespace MATLAB_trader
                 Console.WriteLine
                     ("At least one Unrecognized parameter. Using new message: {0}", message);
             }
-            else
-            {
-                for (var i = 0; i < account.Count; i++)
-                {
-                    AccountSettings.AccountSettingsList.Add(new AccountSettings
-                    {
-                        AccountNumber = account[i],
-                        Port = port[i]
-                    });
-                    //Console.WriteLine("Using Account number: " + account[i] + " Port:" + port[i] +
-                    //                  " on this matlab function:" + Matlab.MatlabFunction);
-                }
-            }
+            
             SetAndCreateLogDirectory();
             MappingConfiguration.Register();
             ConnectToIb();
-            new StrategyTrader(wrapper).StartTrading();
+            new StrategyLauncher(wrapper);
         }
 
         private static void SetAndCreateLogDirectory()
         {
-            if (Directory.Exists(Properties.Settings.Default.logDirectory))
+            if (Directory.Exists(Settings.Default.logDirectory))
             {
                 ((FileTarget) LogManager.Configuration.FindTargetByName("logfile")).FileName =
-                    Properties.Settings.Default.logDirectory + "Log.log";
+                    Settings.Default.logDirectory + "Log.log";
 
             }
             else
             {
-                Directory.CreateDirectory(Properties.Settings.Default.logDirectory);
+                Directory.CreateDirectory(Settings.Default.logDirectory);
                 ((FileTarget)LogManager.Configuration.FindTargetByName("logfile")).FileName =
-                    Properties.Settings.Default.logDirectory + "Log.log";
+                    Settings.Default.logDirectory + "Log.log";
             }            
         }
         private static void ConnectToIb()
         {
-            RequestsClient.RequestsClient client = new RequestsClient.RequestsClient(Program.AccountID,
+            RequestsClient.RequestsClient client = new RequestsClient.RequestsClient(AccountID,
                 Settings.Default.EquityUpdateServerRouterPort, Settings.Default.MessagesServerPullPort, Settings.Default.AccountNumber);
             client.StartPushServer();
 
