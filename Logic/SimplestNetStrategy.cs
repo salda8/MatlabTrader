@@ -16,7 +16,7 @@ namespace StrategyTrader.Logic
         private readonly DataRequestClient.DataRequestClient client;
         private List<OHLCBar> data;
 
-        public static int InstrumentId => instrumentId==0? ( instrumentId= historicalDataRequest.Instrument.ID.Value): instrumentId;
+        public static int InstrumentId => instrumentId==0? ( instrumentId= historicalDataRequest.Instrument.ID): instrumentId;
 
         private static HistoricalDataRequest historicalDataRequest = new HistoricalDataRequest()
         {
@@ -47,8 +47,9 @@ namespace StrategyTrader.Logic
 
         private int dataCount;
         private static int instrumentId;
+        private TradingCalendar calendar;
 
-        public SimplestNetStrategy(IbClient wrapper)
+        public SimplestNetStrategy(IbClient wrapper, Instrument instrument)
         {
             this.wrapper = wrapper;
             client = new DataRequestClient.DataRequestClient(Settings.Default.AccountNumber, Settings.Default.host,
@@ -56,6 +57,7 @@ namespace StrategyTrader.Logic
                 Settings.Default.HistoricalServerPort);
             client.Connect();
             client.HistoricalDataReceived += HistoricalDataReceived;
+            calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration.Value);
         }
 
         private void HistoricalDataReceived(object sender, HistoricalDataEventArgs e)
@@ -116,6 +118,11 @@ namespace StrategyTrader.Logic
         {
             while (TradingCalendar.IsTradingDay())
             {
+                if (calendar.IsRolloverDay)
+                {
+                    RolloverPositionAndContract();
+                }
+
                 while (TradingCalendar.IsTradingHour())
                 {
                     while (HighResolutionDateTime.UtcNow.Second != 0)
@@ -129,6 +136,17 @@ namespace StrategyTrader.Logic
                 }
                 Thread.Sleep(10000);
             }
+        }
+
+        private void RolloverPositionAndContract()
+        {
+            //todo
+            //update instrument
+            var requestClient = new RequestsClient.RequestsClient(Settings.Default.AccountID,
+                Settings.Default.InstrumetnUpdateRequestSocketPort);
+            var contract = requestClient.RequestActiveInstrumentContract(historicalDataRequest.Instrument.UnderlyingSymbol);
+            //close position
+            //open under new contract
         }
     }
 }

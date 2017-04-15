@@ -202,5 +202,29 @@ namespace StrategyTrader.Properties {
                 this["logDirectory"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int StrategyID {
+            get {
+                return ((int)(this["StrategyID"]));
+            }
+            set {
+                this["StrategyID"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5558")]
+        public int InstrumetnUpdateRequestSocketPort {
+            get {
+                return ((int)(this["InstrumetnUpdateRequestSocketPort"]));
+            }
+            set {
+                this["InstrumetnUpdateRequestSocketPort"] = value;
+            }
+        }
     }
 }

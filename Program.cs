@@ -55,9 +55,9 @@ namespace StrategyTrader
             }
             catch (OptionException e)
             {
-                Console.Write("greet: ");
+              
                 Console.WriteLine(e.Message);
-                Console.WriteLine("Try `greet --help' for more information.");
+              
                 return;
             }
 
@@ -98,7 +98,7 @@ namespace StrategyTrader
         private static void ConnectToIb()
         {
             RequestsClient.RequestsClient client = new RequestsClient.RequestsClient(AccountID,
-                Settings.Default.EquityUpdateServerRouterPort, Settings.Default.MessagesServerPullPort, Settings.Default.AccountNumber);
+                Settings.Default.EquityUpdateServerRouterPort, Settings.Default.MessagesServerPullPort,  Settings.Default.AccountNumber);
             client.StartPushServer();
 
             wrapper = new IbClient(client);

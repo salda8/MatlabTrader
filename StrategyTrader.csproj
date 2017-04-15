@@ -132,6 +132,10 @@
       <Project>{7EA40D71-4D14-4B86-B07D-932959FA0D20}</Project>
       <Name>Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\qdms\DataAccess\DataAccess.csproj">
+      <Project>{aea3426e-81b7-4c7e-a1cc-29743229cdcc}</Project>
+      <Name>DataAccess</Name>
+    </ProjectReference>
     <ProjectReference Include="..\qdms\DataRequestClient\DataRequestsClient.csproj">
       <Project>{C8C75909-6503-481D-8985-45BB91A88487}</Project>
       <Name>DataRequestsClient</Name>

@@ -1,16 +1,30 @@
-﻿using System;
+﻿using Common.EntityModels;
+using System;
 
 namespace StrategyTrader.Logic
 {
     internal class TradingCalendar
     {
+        public bool IsRolloverDay => DateTime.Now.DayOfYear == RolloverDate.DayOfYear;
+
+        public DateTime RolloverDate => ExpirationDate.AddDays(-ExpirationRule.DaysBefore);
+
+        public DateTime ExpirationDate { get; set; }
+
+        public ExpirationRule ExpirationRule { get; set; }
+
+        public TradingCalendar(ExpirationRule expirationRule, DateTime expirationDate)
+        {
+            this.ExpirationRule = expirationRule;
+            this.ExpirationDate = expirationDate;
+        }
+
         public static bool IsTradingDay()
         {
-           
             var dt = DateTime.Now;
             if (dt.DayOfWeek == DayOfWeek.Saturday || dt.DayOfWeek == DayOfWeek.Sunday)
             {
-               return false;
+                return false;
             }
             if (Properties.Settings.Default.TradingOnBankingHoliday)
             {
@@ -25,14 +39,12 @@ namespace StrategyTrader.Logic
             return true;
         }
 
-       
-
         /// <summary>
         /// Determines if this date is a federal holiday.
         /// </summary>
         /// <param name="date">This date</param>
         /// <returns>True if this date is a federal holiday</returns>
-        public static bool IsFederalHoliday( DateTime date)
+        public static bool IsFederalHoliday(DateTime date)
         {
             // to ease typing
             int nthWeekDay = (int)(Math.Ceiling((double)date.Day / 7.0d));

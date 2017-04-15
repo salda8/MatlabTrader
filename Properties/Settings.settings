@@ -1,5 +1,5 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="MATLAB_trader.Properties" GeneratedClassName="Settings">
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="StrategyTrader.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
     <Setting Name="TradingOnBankingHoliday" Type="System.Boolean" Scope="User">
@@ -46,6 +46,12 @@
     </Setting>
     <Setting Name="logDirectory" Type="System.String" Scope="User">
       <Value Profile="(Default)">C:\Logs\</Value>
+    </Setting>
+    <Setting Name="StrategyID" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="InstrumetnUpdateRequestSocketPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5558</Value>
     </Setting>
   </Settings>
 </SettingsFile>
