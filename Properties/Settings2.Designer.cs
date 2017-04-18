@@ -145,7 +145,7 @@ namespace StrategyTrader.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("4001")]
+        [global::System.Configuration.DefaultSettingValueAttribute("4002")]
         public int ibPort {
             get {
                 return ((int)(this["ibPort"]));
@@ -157,7 +157,7 @@ namespace StrategyTrader.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("DU15183")]
+        [global::System.Configuration.DefaultSettingValueAttribute("DU15157")]
         public string AccountNumber {
             get {
                 return ((string)(this["AccountNumber"]));
@@ -181,7 +181,7 @@ namespace StrategyTrader.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1006")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public int AccountID {
             get {
                 return ((int)(this["AccountID"]));
@@ -224,6 +224,18 @@ namespace StrategyTrader.Properties {
             }
             set {
                 this["InstrumetnUpdateRequestSocketPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int InstrumentId {
+            get {
+                return ((int)(this["InstrumentId"]));
+            }
+            set {
+                this["InstrumentId"] = value;
             }
         }
     }

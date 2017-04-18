@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using Common;
 using Common.EntityModels;
 using Common.Enums;
 using Common.EventArguments;
 using Common.Requests;
+using IBApi;
 using StrategyTrader.Properties;
 
 namespace StrategyTrader.Logic
@@ -15,49 +17,27 @@ namespace StrategyTrader.Logic
         private readonly IbClient wrapper;
         private readonly DataRequestClient.DataRequestClient client;
         private List<OHLCBar> data;
-
-        public static int InstrumentId => instrumentId==0? ( instrumentId= historicalDataRequest.Instrument.ID): instrumentId;
-
-        private static HistoricalDataRequest historicalDataRequest = new HistoricalDataRequest()
-        {
-            Instrument =
-                new Instrument()
-                {
-                    ID=1,
-                    Symbol = "GCM7",
-                    UnderlyingSymbol = "GC",
-                    Type = InstrumentType.Future,
-                    Exchange = new Exchange { ID = 255, Name = "NYMEX", Timezone = "Eastern Standard Time" },
-                    Datasource = new Datasource() { Name = "Interactive Brokers" },
-                    Currency = "USD",
-                    MinTick=Convert.ToDecimal(0.1),
-                    Multiplier=100,
-                    ValidExchanges="NYMEX",
-
-
-
-                },
-            Frequency = BarSize.OneHour,
-            EndingDate = DateTime.Now,
-            StartingDate = DateTime.Now.AddDays(-3),
-            DataLocation = DataLocation.ExternalOnly,
-            RTHOnly = false,
-            SaveToLocalStorage = false,
-        };
+        
+        private HistoricalDataRequest historicalDataRequest;
 
         private int dataCount;
-        private static int instrumentId;
+        
         private TradingCalendar calendar;
+        private Instrument instrument;
+        private Contract contract;
 
-        public SimplestNetStrategy(IbClient wrapper, Instrument instrument)
+        public SimplestNetStrategy(IbClient wrapper)
         {
             this.wrapper = wrapper;
+
             client = new DataRequestClient.DataRequestClient(Settings.Default.AccountNumber, Settings.Default.host,
                 Settings.Default.RealTimeDataServerRequestPort, Settings.Default.RealTimeDataServerPublishPort,
                 Settings.Default.HistoricalServerPort);
             client.Connect();
             client.HistoricalDataReceived += HistoricalDataReceived;
-            calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration.Value);
+            GetInstrumentAndContract();
+           
+
         }
 
         private void HistoricalDataReceived(object sender, HistoricalDataEventArgs e)
@@ -65,7 +45,7 @@ namespace StrategyTrader.Logic
             dataCount = e.Data.Count;
             data = new List<OHLCBar>(dataCount);
             data.AddRange(e.Data);
-            
+
         }
 
         public void Execute()
@@ -82,7 +62,7 @@ namespace StrategyTrader.Logic
                 //{
                 //    Trade.MakeMktTrade("SELL", wrapper);
                 //}
-                Trade.MakeMktTrade(Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? "BUY" : "SELL", wrapper);
+                Trade.MakeMktTrade(Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? "BUY" : "SELL", wrapper, contract);
             }
             else
             {
@@ -91,7 +71,7 @@ namespace StrategyTrader.Logic
 
             }
         }
-        
+
 
         private void RequestNewData() => client.RequestHistoricalData(historicalDataRequest);
 
@@ -140,13 +120,51 @@ namespace StrategyTrader.Logic
 
         private void RolloverPositionAndContract()
         {
-            //todo
-            //update instrument
-            var requestClient = new RequestsClient.RequestsClient(Settings.Default.AccountID,
-                Settings.Default.InstrumetnUpdateRequestSocketPort);
-            var contract = requestClient.RequestActiveInstrumentContract(historicalDataRequest.Instrument.UnderlyingSymbol);
+            GetInstrumentAndContract();
             //close position
+            ClosePositions();
             //open under new contract
         }
+
+        private void ClosePositions()
+        {
+        }
+
+        private void GetInstrumentAndContract()
+        {
+            var requestClient = new RequestsClient.RequestsClient(Settings.Default.AccountID,
+                Settings.Default.InstrumetnUpdateRequestSocketPort);
+            instrument = requestClient.RequestActiveInstrumentContract(Settings.Default.StrategyID);
+            contract = InstrumentToContract(instrument);
+            historicalDataRequest = new HistoricalDataRequest()
+            {
+                Instrument = instrument,
+                Frequency = BarSize.OneHour,
+                EndingDate = DateTime.Now,
+                StartingDate = DateTime.Now.AddDays(-3),
+                DataLocation = DataLocation.ExternalOnly,
+                RTHOnly = false,
+                SaveToLocalStorage = false
+            };
+
+            Properties.Settings.Default.InstrumentId = instrument.ID;
+            Properties.Settings.Default.Save();
+
+            wrapper.ClientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);
+            calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration);
+
+        }
+    
+
+        public static Contract InstrumentToContract(Instrument instrument) => new Contract()
+        {
+            Symbol = instrument.UnderlyingSymbol,
+            SecType = Common.Utils.GetDescriptionHelper.GetDescription(instrument.Type, string.Empty),
+            LastTradeDateOrContractMonth = instrument.Expiration.ToString("yyyyMM", CultureInfo.InvariantCulture),
+            Multiplier = instrument.Multiplier.ToString(),
+            Currency = instrument.Currency,
+            
+            IncludeExpired = false
+        };
     }
 }

@@ -1,8 +1,6 @@
-using System;
-using Common;
 using Common.EntityModels;
 using IBApi;
-using StrategyTrader.Logic;
+using System;
 
 namespace StrategyTrader
 {
@@ -12,11 +10,11 @@ namespace StrategyTrader
                                                          Execution execution)
         {
             return new ExecutionMessage
-                   {
+            {
                 RequestId = reqId,
                 ExecutionId = execution.ExecId,
                 PermanentId = execution.PermId,
-                InstrumentID = SimplestNetStrategy.InstrumentId,
+                InstrumentID = Properties.Settings.Default.InstrumentId,
                 AccountID = Program.AccountID,
                 Quantity = execution.CumQty,
                 Side = execution.Side,
@@ -29,38 +27,33 @@ namespace StrategyTrader
         public static OpenOrder GetOpenOrder(Contract contract, Order order, OrderState orderState)
         {
             return new OpenOrder
-                   {
+            {
                 PermanentId = order.PermId,
-                       AccountID = Program.AccountID,
-                        InstrumentID = SimplestNetStrategy.InstrumentId,
+                AccountID = Program.AccountID,
+                InstrumentID = Properties.Settings.Default.InstrumentId,
                 Status = orderState.Status,
-                     LimitPrice = (decimal) order.LmtPrice,
-                       Quantity = (decimal) order.TotalQuantity,
-                       Type = order.OrderType
-                       
-                   };
-
-          
+                LimitPrice = (decimal)order.LmtPrice,
+                Quantity = (decimal)order.TotalQuantity,
+                Type = order.OrderType
+            };
         }
 
         public static OrderStatusMessage GetOrderStatusMessage(int orderId, string status, int filled, int remaining, double averageFillPrice,
             int permanentId, int parentId, double lastFillPrice, int clientId, string whyHeld)
         {
             return new OrderStatusMessage
-            { 
-                       OrderId = orderId,
-                       Status = status,
-                       Filled = filled,
-                       Remaining = remaining,
-                       AverageFillPrice = new decimal(averageFillPrice),
-                       PermanentId = permanentId,
-                       ParentId = parentId,
-                       LastFillPrice = new decimal(lastFillPrice),
-                       ClientId = clientId,
-                       WhyHeld = whyHeld
-                   };
+            {
+                OrderId = orderId,
+                Status = status,
+                Filled = filled,
+                Remaining = remaining,
+                AverageFillPrice = new decimal(averageFillPrice),
+                PermanentId = permanentId,
+                ParentId = parentId,
+                LastFillPrice = new decimal(lastFillPrice),
+                ClientId = clientId,
+                WhyHeld = whyHeld
+            };
         }
-
-        
     }
 }

@@ -33,16 +33,16 @@
       <Value Profile="(Default)">5552</Value>
     </Setting>
     <Setting Name="ibPort" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">4001</Value>
+      <Value Profile="(Default)">4002</Value>
     </Setting>
     <Setting Name="AccountNumber" Type="System.String" Scope="User">
-      <Value Profile="(Default)">DU15183</Value>
+      <Value Profile="(Default)">DU15157</Value>
     </Setting>
     <Setting Name="host" Type="System.String" Scope="User">
       <Value Profile="(Default)">localhost</Value>
     </Setting>
     <Setting Name="AccountID" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">1006</Value>
+      <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="logDirectory" Type="System.String" Scope="User">
       <Value Profile="(Default)">C:\Logs\</Value>
@@ -52,6 +52,9 @@
     </Setting>
     <Setting Name="InstrumetnUpdateRequestSocketPort" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5558</Value>
+    </Setting>
+    <Setting Name="InstrumentId" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
     </Setting>
   </Settings>
 </SettingsFile>
