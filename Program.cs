@@ -104,9 +104,7 @@ namespace StrategyTrader
             EReaderSignal readerSignal = wrapper.Signal;
 
             clientSocket.eConnect("127.0.0.1", Settings.Default.ibPort, 0);
-            clientSocket.reqAllOpenOrders();
-            clientSocket.reqPositions();
-
+           
             //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
             var reader = new EReader(clientSocket, readerSignal);
             reader.Start();
@@ -124,14 +122,16 @@ namespace StrategyTrader
             while (wrapper.NextOrderId <= 0) { }
 
             clientSocket.reqGlobalCancel();
+            GetAccountByStrategyId();
             clientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);
+            
         }
 
-        public static int LoadedSymbolInstrumentID(string messageContractSymbol)
+        private static void GetAccountByStrategyId()
         {
-            return LoadedSymbolsDictionary[messageContractSymbol];
+
         }
 
-        public static Dictionary<string, int> LoadedSymbolsDictionary { get; set; }
+        
     }
 }

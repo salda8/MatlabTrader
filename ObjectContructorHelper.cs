@@ -34,7 +34,8 @@ namespace StrategyTrader
                 Status = orderState.Status,
                 LimitPrice = (decimal)order.LmtPrice,
                 Quantity = (decimal)order.TotalQuantity,
-                Type = order.OrderType
+                Type = order.OrderType,
+                OrderId=order.OrderId
             };
         }
 

@@ -60,11 +60,8 @@ namespace StrategyTrader.Logic
                 Tif = "GTC"
             };
 
-            wrapper.ClientSocket.placeOrder(order.OrderId, FutureComboContract(), order);
-            //order.Action = direction == "SELL" ? "BUY" : "SELL";
-            //order.OrderId = wrapper.NextOrderId++;
-            //wrapper.ClientSocket.placeOrder(order.OrderId, FutureComboContract(), order);
-            //Thread.Sleep(5000);
+            wrapper.ClientSocket.placeOrder(order.OrderId, (contract ?? futureComboContract), order);
+            
         }
 
         public static Contract FutureComboContract() => futureComboContract;

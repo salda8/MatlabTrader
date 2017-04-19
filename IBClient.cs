@@ -25,12 +25,14 @@ namespace StrategyTrader
         private readonly TaskFactory tf = new TaskFactory();
         private int lastOrderId;
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private NumberFormatInfo provider= new NumberFormatInfo
+        private readonly NumberFormatInfo provider= new NumberFormatInfo
         {
             NumberDecimalSeparator = ",",
             NumberGroupSeparator = ".",
             NumberGroupSizes = new[] { 3 }
         };
+
+        private bool openOrderEndEnded=false;
 
         public IbClient(RequestsClient.RequestsClient client)
         {
@@ -49,7 +51,8 @@ namespace StrategyTrader
 
          public virtual void updateAccountValue(string key, string value, string currency, string accountName)
         {
-          
+
+
             if ((key == "NetLiquidation" || key == "CashBalance" || key == "DayTradesRemaining" ||
                  key == "EquityWithLoanValue" || key == "InitMarginReq" || key == "MaintMarginReq"
                  || key == "UnrealizedPnL") && currency == "USD")
@@ -76,46 +79,46 @@ namespace StrategyTrader
 
         }
 
-        public virtual void UpdatePortfolio(Contract contract, int position, double marketPrice, double marketValue,
-            double averageCost, double unrealisedPnl, double realisedPnl, string accountName)
+        
+
+        public void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue,
+                                     double averageCost, double unrealisedPnl, double realisedPnl,
+                                     string accountName)
         {
-            if (contract.SecType == "FUT")
-            {
-                logger.Info("UpdatePortfolio. " + contract.Symbol + ", " + contract.SecType + " @ " +
-                                  contract.Exchange
-                                  + ": Quantity: " + position + ", MarketPrice: " + marketPrice + ", MarketValue: " +
-                                  marketValue + ", AveragePrice: " + averageCost
-                                  + ", UnrealisedPNL: " + unrealisedPnl + ", RealisedPNL: " + realisedPnl +
-                                  ", AccountName: " + accountName + "\n");
-                //tf.StartNew(
-                //    (() =>
-                //        Client.HandlePortfolioUpdate(accountName, contract.Symbol, position,
-                //        marketPrice, marketValue, averageCost, realisedPnl, unrealisedPnl)));
-            }
+            logger.Info("UpdatePortfolio. " + contract.Symbol+" " + contract.LocalSymbol+ ", " + contract.SecType + " @ " +
+                                contract.Exchange
+                                + ": Quantity: " + position + ", MarketPrice: " + marketPrice + ", MarketValue: " +
+                                marketValue + ", AveragePrice: " + averageCost
+                                + ", UnrealisedPNL: " + unrealisedPnl + ", RealisedPNL: " + realisedPnl +
+                                ", AccountName: " + accountName + "\n");
         }
 
-       
-      
-        public virtual void OrderStatus(int orderId, string status, int filled, int remaining, double avgFillPrice,
-            int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
+        public void orderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice,
+                                int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
         {
             logger.Info("OrderStatus. Id: " + orderId + ", Status: " + status + ", Filled" + filled +
                               ", Remaining: " + remaining
                               + ", AverageFillPrice: " + avgFillPrice + ", PermanentId: " + permId + ", ParentId: " + parentId +
                               ", LastFillPrice: " + lastFillPrice + ", ClientId: " + clientId + ", WhyHeld: " + whyHeld +
                               "\n");
-            Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOrderStatusMessage(orderId, status, filled, remaining,
+            Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOrderStatusMessage(orderId, status, Convert.ToInt32(filled), Convert.ToInt32(remaining),
                         avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld), GeneralRequestMessageType.OrderStatusPush);
         }
 
         public virtual void openOrder(int orderId, Contract contract, Order order, OrderState orderState)
         {
-           logger.Info("OpenOrder. ID: " + orderId + ", " + contract.Symbol + ", " + contract.SecType + " @ " +
-                              contract.Exchange + ": " + order.Action + ", " + order.OrderType + " " +
-                              order.TotalQuantity + ", " + orderState.Status + "\n");
-            if (lastOrderId == orderId) return; //for some reason IB sends 3 IB messages with status filled
-            lastOrderId = orderId;
-            Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOpenOrder(contract, order, orderState), GeneralRequestMessageType.OpenOrderPush);
+            if (openOrderEndEnded)
+            {
+
+
+                logger.Info("OpenOrder. ID: " + orderId + ", " + contract.Symbol + ", " + contract.SecType + " @ " +
+                            contract.Exchange + ": " + order.Action + ", " + order.OrderType + " " +
+                            order.TotalQuantity + ", " + orderState.Status + "\n");
+                if (lastOrderId == orderId) return; //for some reason IB sends 3 IB messages with status filled
+                lastOrderId = orderId;
+                Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOpenOrder(contract, order, orderState),
+                    GeneralRequestMessageType.OpenOrderPush);
+            }
         }
 
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
@@ -147,6 +150,15 @@ namespace StrategyTrader
 
         public virtual void error(int id, int errorCode, string errorMsg)
         {
+            
+            if (errorCode==201 && errorMsg.Contains("15 orders"))
+            {
+                this.ClientSocket.reqGlobalCancel();
+            }
+            if (errorCode==202 && string.IsNullOrWhiteSpace(errorMsg))
+            {
+                return;
+            }
             logger.Error("Error. Id: " + id + ", Code: " + errorCode + ", Msg: " + errorMsg + "\n");
             // tf.StartNew(() => Client.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
         }
@@ -228,6 +240,8 @@ namespace StrategyTrader
 
         public virtual void accountDownloadEnd(string account)
         {
+            Settings.Default.AccountNumber = account;
+            Settings.Default.Save();
             logger.Info("Account download finished: " + account + "\n");
         }
         public virtual void managedAccounts(string accountsList)
@@ -256,6 +270,7 @@ namespace StrategyTrader
 
         public virtual void openOrderEnd()
         {
+            openOrderEndEnded = true;
             logger.Info("OpenOrderEnd");
         }
 
@@ -391,15 +406,8 @@ namespace StrategyTrader
             var userTime = TimeZoneInfo.ConvertTimeFromUtc(dtDateTime, easternZone);
             return userTime.ToString("hh:mm:ss.fff");
         }
-        public void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue,
-                                    double averageCost, double unrealisedPnl, double realisedPnl,
-                                    string accountName)
-        {
-        }
-        public void orderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice,
-                                int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
-        {
-        }
+        
+        
         public void position(string account, Contract contract, double pos, double avgCost)
         {
         }

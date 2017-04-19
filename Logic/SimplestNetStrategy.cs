@@ -63,6 +63,8 @@ namespace StrategyTrader.Logic
                 //    Trade.MakeMktTrade("SELL", wrapper);
                 //}
                 Trade.MakeMktTrade(Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? "BUY" : "SELL", wrapper, contract);
+                Trade.MakeLmtTrade(wrapper, 3000);
+                wrapper.ClientSocket.reqPositions();
             }
             else
             {
@@ -128,6 +130,7 @@ namespace StrategyTrader.Logic
 
         private void ClosePositions()
         {
+
         }
 
         private void GetInstrumentAndContract()
@@ -145,13 +148,17 @@ namespace StrategyTrader.Logic
                 DataLocation = DataLocation.ExternalOnly,
                 RTHOnly = false,
                 SaveToLocalStorage = false
+                
             };
 
             Properties.Settings.Default.InstrumentId = instrument.ID;
             Properties.Settings.Default.Save();
 
-            wrapper.ClientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);
-            calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration);
+            wrapper.ClientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);//todo it is possible to subscribe to that from server
+            wrapper.ClientSocket.reqOpenOrders();
+            wrapper.ClientSocket.reqPositions();
+
+           calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration);
 
         }
     
@@ -161,9 +168,9 @@ namespace StrategyTrader.Logic
             Symbol = instrument.UnderlyingSymbol,
             SecType = Common.Utils.GetDescriptionHelper.GetDescription(instrument.Type, string.Empty),
             LastTradeDateOrContractMonth = instrument.Expiration.ToString("yyyyMM", CultureInfo.InvariantCulture),
-            Multiplier = instrument.Multiplier.ToString(),
             Currency = instrument.Currency,
-            
+            PrimaryExch = instrument.Exchange.Name,
+            Exchange= instrument.Exchange.Name,
             IncludeExpired = false
         };
     }
