@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Threading;
-using Common;
+﻿using Common;
 using Common.EntityModels;
 using Common.Enums;
 using Common.EventArguments;
 using Common.Requests;
 using IBApi;
 using StrategyTrader.Properties;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
 
 namespace StrategyTrader.Logic
 {
@@ -17,14 +17,15 @@ namespace StrategyTrader.Logic
         private readonly IbClient wrapper;
         private readonly DataRequestClient.DataRequestClient client;
         private List<OHLCBar> data;
-        
+
         private HistoricalDataRequest historicalDataRequest;
 
         private int dataCount;
-        
+
         private TradingCalendar calendar;
         private Instrument instrument;
         private Contract contract;
+        private Contract oldContract;
 
         public SimplestNetStrategy(IbClient wrapper)
         {
@@ -36,8 +37,6 @@ namespace StrategyTrader.Logic
             client.Connect();
             client.HistoricalDataReceived += HistoricalDataReceived;
             GetInstrumentAndContract();
-           
-
         }
 
         private void HistoricalDataReceived(object sender, HistoricalDataEventArgs e)
@@ -45,35 +44,35 @@ namespace StrategyTrader.Logic
             dataCount = e.Data.Count;
             data = new List<OHLCBar>(dataCount);
             data.AddRange(e.Data);
-
         }
 
         public void Execute()
         {
-            if (data?.Count > 0)
-            {
-                //var ma1 = SimpleMovingAverageFunction(10);
-                //var ma2 = SimpleMovingAverageFunction(15);
-                //if (ma1[ma1.Length - 1] > ma2[ma2.Length - 1])
-                //{
-                //    Trade.MakeMktTrade("BUY", wrapper);
-                //}
-                //else if (ma1[ma1.Length - 1] < ma2[ma2.Length - 1])
-                //{
-                //    Trade.MakeMktTrade("SELL", wrapper);
-                //}
-                Trade.MakeMktTrade(Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? "BUY" : "SELL", wrapper, contract);
-                Trade.MakeLmtTrade(wrapper, 3000);
-                wrapper.ClientSocket.reqPositions();
-            }
-            else
-            {
-                RequestNewData();
-                Thread.Sleep(1000);
+            //if (data?.Count > 0)
+            //{
+            //var ma1 = SimpleMovingAverageFunction(10);
+            //var ma2 = SimpleMovingAverageFunction(15);
+            //if (ma1[ma1.Length - 1] > ma2[ma2.Length - 1])
+            //{
+            //    Trade.MakeMktTrade("BUY", wrapper);
+            //}
+            //else if (ma1[ma1.Length - 1] < ma2[ma2.Length - 1])
+            //{
+            //    Trade.MakeMktTrade("SELL", wrapper);
+            //}
+            Trade.PlaceMarketOrder(contract, Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? 1 : -1, wrapper);
+            Trade.MakeLmtTrade1(wrapper, 3000, contract);
+            Thread.Sleep(10000);
+            RolloverPositionAndContract();
+            //wrapper.ClientSocket.reqPositions();
+            //}
+            //else
+            //{
+            //    RequestNewData();
+            //    Thread.Sleep(1000);
 
-            }
+            //}
         }
-
 
         private void RequestNewData() => client.RequestHistoricalData(historicalDataRequest);
 
@@ -110,7 +109,6 @@ namespace StrategyTrader.Logic
                     while (HighResolutionDateTime.UtcNow.Second != 0)
                     {
                         Thread.Sleep(1);
-
                     }
 
                     Execute();
@@ -123,14 +121,38 @@ namespace StrategyTrader.Logic
         private void RolloverPositionAndContract()
         {
             GetInstrumentAndContract();
-            //close position
-            ClosePositions();
-            //open under new contract
+            CloseAndReopenPositions();
         }
 
-        private void ClosePositions()
+        private void CloseAndReopenPositions()
         {
+            wrapper.ShouldCollectOpenOrders = true;
+            wrapper.OpenOrderEndEnded = false;
+            wrapper.ClientSocket.reqOpenOrders();
+            wrapper.ClientSocket.reqPositions();
 
+            while (!wrapper.OpenOrderEndEnded)
+            {
+                Thread.Sleep(100);
+            }
+
+            wrapper.ClientSocket.reqGlobalCancel();
+
+            double wrapperLiveOrderQuantity = wrapper.LiveOrderQuantity;
+            List<Order> wrapperOpenOrders = new List<Order>(wrapper.OpenOrders);
+            wrapper.ShouldCollectOpenOrders = false;
+            wrapper.OpenOrders.Clear();
+            Thread.Sleep(10000);//wait for order to get canceled...
+            if (wrapperLiveOrderQuantity != 0)
+            {
+                Trade.PlaceMarketOrder(oldContract, -wrapperLiveOrderQuantity, wrapper);
+                Trade.PlaceMarketOrder(contract, wrapperLiveOrderQuantity, wrapper);
+            }
+
+            foreach (Order order in wrapperOpenOrders)
+            {
+                Trade.PlaceOrder(wrapper, order, contract);
+            }
         }
 
         private void GetInstrumentAndContract()
@@ -138,6 +160,7 @@ namespace StrategyTrader.Logic
             var requestClient = new RequestsClient.RequestsClient(Settings.Default.AccountID,
                 Settings.Default.InstrumetnUpdateRequestSocketPort);
             instrument = requestClient.RequestActiveInstrumentContract(Settings.Default.StrategyID);
+            oldContract = contract;
             contract = InstrumentToContract(instrument);
             historicalDataRequest = new HistoricalDataRequest()
             {
@@ -148,7 +171,6 @@ namespace StrategyTrader.Logic
                 DataLocation = DataLocation.ExternalOnly,
                 RTHOnly = false,
                 SaveToLocalStorage = false
-                
             };
 
             Properties.Settings.Default.InstrumentId = instrument.ID;
@@ -158,10 +180,8 @@ namespace StrategyTrader.Logic
             wrapper.ClientSocket.reqOpenOrders();
             wrapper.ClientSocket.reqPositions();
 
-           calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration);
-
+            calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration);
         }
-    
 
         public static Contract InstrumentToContract(Instrument instrument) => new Contract()
         {
@@ -170,7 +190,7 @@ namespace StrategyTrader.Logic
             LastTradeDateOrContractMonth = instrument.Expiration.ToString("yyyyMM", CultureInfo.InvariantCulture),
             Currency = instrument.Currency,
             PrimaryExch = instrument.Exchange.Name,
-            Exchange= instrument.Exchange.Name,
+            Exchange = instrument.Exchange.Name,
             IncludeExpired = false
         };
     }

@@ -11,34 +11,31 @@ namespace StrategyTrader.Logic
             SecType = "FUT",
             Exchange = "NYMEX",
             Currency = "USD",
-            LastTradeDateOrContractMonth = "201705"
+            LastTradeDateOrContractMonth = "201708"
         };
 
-        //public static void PlaceTrade(Contract contract, int i, IbClient wrapper)
-        //{
-        //    if (i >= 1)
-        //    {
-        //        MakeLmtTrade(wrapper);
-        //        Thread.Sleep(10000);
-        //        MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
-        //        Thread.Sleep(10000);
-        //        MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
-        //        Thread.Sleep(10000);
-        //        wrapper.ClientSocket.reqGlobalCancel();
+        public static void PlaceMarketOrder(Contract contract, double i, IbClient wrapper)
+        {
+            if (i >= 1)
+            {
+                MakeMktTrade("BUY", wrapper, contract, "MKT", i);
 
-        //    }
-        //    else if (i <= -1)
-        //    {
-        //        MakeLmtTrade(wrapper);
-        //        Thread.Sleep(10000);
-        //        MakeMktTrade(contract, "SELL", "MKT", Convert.ToInt32(i), wrapper);
-        //        Thread.Sleep(10000);
-        //        MakeMktTrade(contract, "BUY", "MKT", Convert.ToInt32(i), wrapper);
-        //        Thread.Sleep(10000);
-        //        wrapper.ClientSocket.reqGlobalCancel();
 
-        //    }
-        //}
+            }
+            else if (i <= -1)
+            {
+
+                MakeMktTrade("SELL", wrapper, contract, "MKT", i); 
+               
+
+            }
+        }
+
+        public static void PlaceOrder(IbClient wrapper, Order order, Contract contract)
+        {
+
+            wrapper.ClientSocket.placeOrder(wrapper.NextOrderId, (contract ?? futureComboContract), order);
+        }
 
         /// <summary>
         ///     Trades the specified contract.
@@ -48,7 +45,7 @@ namespace StrategyTrader.Logic
         /// <param name="wrapper"></param>
         /// <param name="type"></param>
         /// <param name="quantity"></param>
-        public static void MakeMktTrade(string direction, IbClient wrapper, Contract contract = null, string type = "MKT", double quantity = 1)
+        private static void MakeMktTrade(string direction, IbClient wrapper, Contract contract = null, string type = "MKT", double quantity = 1)
         {
             var order = new Order
             {
@@ -56,7 +53,7 @@ namespace StrategyTrader.Logic
                 OrderType = type,
                 Account = wrapper.AccountNumber,
                 TotalQuantity = Math.Abs(quantity),
-                OrderId = wrapper.NextOrderId++,
+                OrderId = wrapper.NextOrderId,
                 Tif = "GTC"
             };
 
@@ -76,7 +73,27 @@ namespace StrategyTrader.Logic
                 LmtPrice = price,
                 Account = wrapper.AccountNumber,
                 TotalQuantity = quantity,
-                OrderId = wrapper.NextOrderId++,
+                OrderId = wrapper.NextOrderId,
+                Tif = "GTC"
+            };
+
+            wrapper.ClientSocket.placeOrder(order.OrderId, (contract ?? futureComboContract), order);
+        }
+
+        
+
+        public static void MakeLmtTrade1(
+            IbClient wrapper, double price = 3000, Contract contract = null, int quantity = 1, string direction = "SELL", string type = "LMT")
+        {
+            var order = new Order
+            {
+                Action = direction,
+                OrderType = type,
+                LmtPrice = price,
+                AdjustedStopPrice =2500,
+                Account = wrapper.AccountNumber,
+                TotalQuantity = quantity,
+                OrderId = 3,
                 Tif = "GTC"
             };
 
