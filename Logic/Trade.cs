@@ -30,11 +30,22 @@ namespace StrategyTrader.Logic
 
             }
         }
-
+       
         public static void PlaceOrder(IbClient wrapper, Order order, Contract contract)
         {
+            order.OrderId = wrapper.NextOrderId;
+            wrapper.ClientSocket.placeOrder(order.OrderId, (contract ?? futureComboContract), order);
+            //it does not really matter how fast this method execute since 
+            //this is only used when for limit/stop when rolling over contracts
+            //so lets add random delay to ensure no problems with order ids
+            AddRandomDelay();
+        }
 
-            wrapper.ClientSocket.placeOrder(wrapper.NextOrderId, (contract ?? futureComboContract), order);
+        private static void AddRandomDelay()
+        {
+            Random random = new Random();
+            var mseconds = random.Next(3, 10) * 10;
+            System.Threading.Thread.Sleep(mseconds);
         }
 
         /// <summary>
@@ -93,7 +104,7 @@ namespace StrategyTrader.Logic
                 AdjustedStopPrice =2500,
                 Account = wrapper.AccountNumber,
                 TotalQuantity = quantity,
-                OrderId = 3,
+                OrderId = wrapper.NextOrderId,
                 Tif = "GTC"
             };
 

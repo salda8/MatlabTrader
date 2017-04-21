@@ -181,7 +181,7 @@ namespace StrategyTrader.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("99999")]
         public int AccountID {
             get {
                 return ((int)(this["AccountID"]));
@@ -236,6 +236,18 @@ namespace StrategyTrader.Properties {
             }
             set {
                 this["InstrumentId"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("127.0.0.1")]
+        public string IBGatewayIP {
+            get {
+                return ((string)(this["IBGatewayIP"]));
+            }
+            set {
+                this["IBGatewayIP"] = value;
             }
         }
     }

@@ -1,17 +1,17 @@
 ﻿/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Threading.Tasks;
-using Common;
 using Common.EntityModels;
 using Common.Enums;
 using ExpressMapper.Extensions;
 using IBApi;
 using NLog;
 using StrategyTrader.Properties;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace StrategyTrader
 {
@@ -25,34 +25,68 @@ namespace StrategyTrader
         private readonly TaskFactory tf = new TaskFactory();
         private int lastOrderId;
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private readonly NumberFormatInfo provider= new NumberFormatInfo
+        private ReaderWriterLockSlim nextOrderIdLock = new ReaderWriterLockSlim();
+        private ReaderWriterLockSlim lastOrderIdLock = new ReaderWriterLockSlim();
+        private ReaderWriterLockSlim lastOrderStatusIdLock = new ReaderWriterLockSlim();
+
+        private readonly NumberFormatInfo provider = new NumberFormatInfo
         {
             NumberDecimalSeparator = ",",
             NumberGroupSeparator = ".",
             NumberGroupSizes = new[] { 3 }
         };
 
-        private bool openOrderEndEnded=false;
+        private bool openOrderEndEnded = false;
+        private int nextOrderId;
+        private int lastOrderStatusId;
+        private string lastOrderStatus;
+        private string lastOrderStatusStatus;
 
         public IbClient(RequestsClient.RequestsClient client)
         {
             Client = client;
             Signal = new EReaderMonitorSignal();
             ClientSocket = new EClientSocket(this, Signal);
-            
-
         }
 
         public EClientSocket ClientSocket { get; set; }
         public EReaderMonitorSignal Signal { get; set; }
-        public int NextOrderId { get; set; }
+
+        public int NextOrderId
+        {
+            get
+            {
+                nextOrderIdLock.TryEnterUpgradeableReadLock(-1);
+                try
+                {
+                    nextOrderId = nextOrderId + 1;
+                    return nextOrderId;
+                }
+                finally
+                {
+                    if (nextOrderIdLock.IsUpgradeableReadLockHeld)
+                    {
+                        nextOrderIdLock.ExitUpgradeableReadLock();
+                    }
+                }
+            }
+        }
+
         public string AccountNumber { get; } = Settings.Default.AccountNumber;
         public decimal Equity { get; set; }
+        public List<Order> OpenOrders { get; set; } = new List<Order>(10);
+        public double LiveOrderQuantity { get; set; }
 
-         public virtual void updateAccountValue(string key, string value, string currency, string accountName)
+        public bool ShouldCollectOpenOrders { get; set; }
+
+        public bool OpenOrderEndEnded
         {
+            get { return openOrderEndEnded; }
+            set { openOrderEndEnded = value; }
+        }
 
-
+        public virtual void updateAccountValue(string key, string value, string currency, string accountName)
+        {
             if ((key == "NetLiquidation" || key == "CashBalance" || key == "DayTradesRemaining" ||
                  key == "EquityWithLoanValue" || key == "InitMarginReq" || key == "MaintMarginReq"
                  || key == "UnrealizedPnL") && currency == "USD")
@@ -65,68 +99,100 @@ namespace StrategyTrader
                     if (key == "NetLiquidation")
                     {
                         Equity = Convert.ToDecimal(value, provider);
-                        Client.PushGeneralRequestMesssage(new Equity() {AccountID=Program.AccountID, Value=Equity, UpdateTime=DateTime.Now}, GeneralRequestMessageType.EquityUpdatePush);
+                        Client.PushPushMessageType(new Equity() { AccountID = Settings.Default.AccountID, Value = Equity, UpdateTime = DateTime.Now }, PushMessageType.EquityUpdatePush);
                     }
-
-
-
                 }
-                Client.PushGeneralRequestMesssage(new AccountSummaryUpdate(Program.AccountID, key, Convert.ToDouble(value, provider).ToString(CultureInfo.InvariantCulture)),
-                    GeneralRequestMessageType.AccountUpdatePush);
-                
-
+                Client.PushPushMessageType(new AccountSummaryUpdate(Settings.Default.AccountID, key, Convert.ToDouble(value, provider).ToString(CultureInfo.InvariantCulture)),
+                    PushMessageType.AccountUpdatePush);
             }
-
         }
-
-        
 
         public void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue,
                                      double averageCost, double unrealisedPnl, double realisedPnl,
                                      string accountName)
         {
-            logger.Info("UpdatePortfolio. " + contract.Symbol+" " + contract.LocalSymbol+ ", " + contract.SecType + " @ " +
+
+            logger.Info("UpdatePortfolio. " + contract.Symbol + " " + contract.LocalSymbol + ", " + contract.SecType + " @ " +
                                 contract.Exchange
                                 + ": Quantity: " + position + ", MarketPrice: " + marketPrice + ", MarketValue: " +
                                 marketValue + ", AveragePrice: " + averageCost
                                 + ", UnrealisedPNL: " + unrealisedPnl + ", RealisedPNL: " + realisedPnl +
                                 ", AccountName: " + accountName + "\n");
+            if (position != 0)
+            {
+                Client.PushPushMessageType(
+                    ObjectConstructorHelper.GetLiveTrade(position, marketPrice, averageCost,
+                        unrealisedPnl, realisedPnl), PushMessageType.LiveTradePush);
+                LiveOrderQuantity = position;
+            }
         }
 
         public void orderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice,
                                 int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
         {
-            logger.Info("OrderStatus. Id: " + orderId + ", Status: " + status + ", Filled" + filled +
-                              ", Remaining: " + remaining
-                              + ", AverageFillPrice: " + avgFillPrice + ", PermanentId: " + permId + ", ParentId: " + parentId +
-                              ", LastFillPrice: " + lastFillPrice + ", ClientId: " + clientId + ", WhyHeld: " + whyHeld +
-                              "\n");
-            Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOrderStatusMessage(orderId, status, Convert.ToInt32(filled), Convert.ToInt32(remaining),
-                        avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld), GeneralRequestMessageType.OrderStatusPush);
+            lastOrderStatusIdLock.TryEnterUpgradeableReadLock(-1);
+            try
+            {
+                if (lastOrderStatusId == orderId && lastOrderStatusStatus == status) return; //for some reason IB sends sometime more than 1 IB messages with same status and id
+                lastOrderStatusId = orderId;
+                lastOrderStatusStatus = status;
+            }
+            finally
+            {
+                if (lastOrderStatusIdLock.IsUpgradeableReadLockHeld)
+                {
+                    lastOrderStatusIdLock.ExitUpgradeableReadLock();
+                }
+            }
+
+            logger.Info("OrderStatus. Id: " + orderId + ", Status: " + status + ", AverageFillPrice: " + avgFillPrice + ", PermanentId: " + permId
+
+                             );
+            Client.PushPushMessageType(ObjectConstructorHelper.GetOrderStatusMessage(orderId, status, Convert.ToInt32(filled), Convert.ToInt32(remaining),
+                        avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld), PushMessageType.OrderStatusPush);
         }
 
         public virtual void openOrder(int orderId, Contract contract, Order order, OrderState orderState)
         {
-            if (openOrderEndEnded)
+            if (OpenOrderEndEnded)
             {
+                lastOrderIdLock.TryEnterUpgradeableReadLock(-1);
+                try
+                {
+                    if ((lastOrderId == orderId && lastOrderStatus == orderState.Status)) return; //for some reason IB sends sometime more than 1 IB messages with same status and id
+                    lastOrderId = orderId;
+                    lastOrderStatus = orderState.Status;
+                }
+                finally
+                {
+                    if (lastOrderIdLock.IsUpgradeableReadLockHeld)
+                    {
+                        lastOrderIdLock.ExitUpgradeableReadLock();
+                    }
+                }
 
-
-                logger.Info("OpenOrder. ID: " + orderId + ", " + contract.Symbol + ", " + contract.SecType + " @ " +
+                logger.Info("OpenOrder. ID: " + orderId + ", " + contract.LocalSymbol + ", " + contract.SecType + " @ " +
                             contract.Exchange + ": " + order.Action + ", " + order.OrderType + " " +
                             order.TotalQuantity + ", " + orderState.Status + "\n");
-                if (lastOrderId == orderId) return; //for some reason IB sends 3 IB messages with status filled
-                lastOrderId = orderId;
-                Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetOpenOrder(contract, order, orderState),
-                    GeneralRequestMessageType.OpenOrderPush);
+
+                Client.PushPushMessageType(ObjectConstructorHelper.GetOpenOrder(contract, order, orderState),
+                    PushMessageType.OpenOrderPush);
+            }
+            else
+            {
+                if (ShouldCollectOpenOrders)
+                {
+                    OpenOrders.Add(order);
+                }
             }
         }
 
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
         {
-            logger.Info("ExecDetails. " + reqId + " - " + contract.Symbol + ", " + contract.SecType + ", " +
-                              contract.Currency + " - " + execution.ExecId + ", " + execution.OrderId + ", " +
+            logger.Info("ExecDetails. " + contract.Symbol + ", " + execution.Side +
+                             " - " + execution.ExecId + ", " + execution.OrderId + ", " +
                               execution.Shares + "\n");
-           Client.PushGeneralRequestMesssage(ObjectConstructorHelper.GetExecutionMessage(reqId, contract, execution), GeneralRequestMessageType.ExecutionPush);
+            Client.PushPushMessageType(ObjectConstructorHelper.GetExecutionMessage(reqId, contract, execution), PushMessageType.ExecutionPush);
         }
 
         public virtual void commissionReport(CommissionReport commissionReport)
@@ -134,9 +200,9 @@ namespace StrategyTrader
             logger.Info("CommissionReport. " + commissionReport.ExecId + " - " + commissionReport.Commission + " " +
                               commissionReport.Currency + " RPNL " + commissionReport.RealizedPNL + "\n");
 
-           Client.PushGeneralRequestMesssage(commissionReport.Map<CommissionReport, CommissionMessage>(), GeneralRequestMessageType.CommissionPush);
-
+            Client.PushPushMessageType(commissionReport.Map<CommissionReport, CommissionMessage>(), PushMessageType.CommissionPush);
         }
+
         public virtual void error(Exception e)
         {
             logger.Error("Exception thrown: " + e);
@@ -150,21 +216,28 @@ namespace StrategyTrader
 
         public virtual void error(int id, int errorCode, string errorMsg)
         {
-            
-            if (errorCode==201 && errorMsg.Contains("15 orders"))
+            if (errorCode == 201 && errorMsg.Contains("15 orders")) //too many orders
             {
-                this.ClientSocket.reqGlobalCancel();
+                ClientSocket.reqGlobalCancel();
             }
-            if (errorCode==202 && string.IsNullOrWhiteSpace(errorMsg))
+            else if (errorCode == 202)//errro happens when reqGlobalCancel is called
             {
                 return;
             }
+           else if (errorCode == 161)//order is not in cancellable state, happens when reqGlobalCancel is called
+            {
+                return;
+            }
+            else if (errorCode == 2107)//historical data from IB. We are taking historical data from server anyway.
+            {
+                return;
+            }
+
             logger.Error("Error. Id: " + id + ", Code: " + errorCode + ", Msg: " + errorMsg + "\n");
-            // tf.StartNew(() => Client.HandleErrorMsg(errorCode, errorMsg, AccountNumber));
+            
         }
+
         #region UnusedIbApiMethods
-
-
 
         public virtual void realtimeBar(int reqId, long time, double open, double high, double low, double close,
             long volume, double wap, int count)
@@ -177,7 +250,6 @@ namespace StrategyTrader
         public virtual void historicalData(int reqId, string date, double open, double high, double low, double close,
             int volume, int count, double wap, bool hasGaps)
         {
-            
         }
 
         public virtual void connectionClosed()
@@ -194,7 +266,6 @@ namespace StrategyTrader
         {
             if (field == 4)
             {
-               
             }
         }
 
@@ -227,12 +298,13 @@ namespace StrategyTrader
         public virtual void nextValidId(int orderId)
         {
             logger.Info("Next Valid Id: " + orderId + "\n");
-            NextOrderId = orderId;
+            nextOrderId = orderId;
         }
 
         public virtual void deltaNeutralValidation(int reqId, UnderComp underComp)
         {
         }
+
         public virtual void updateAccountTime(string timestamp)
         {
             //logger.Info("UpdateAccountTime. Time: " + timestamp + "\n");
@@ -240,12 +312,13 @@ namespace StrategyTrader
 
         public virtual void accountDownloadEnd(string account)
         {
-            Settings.Default.AccountNumber = account;
-            Settings.Default.Save();
             logger.Info("Account download finished: " + account + "\n");
         }
+
         public virtual void managedAccounts(string accountsList)
         {
+            Settings.Default.AccountNumber = accountsList;
+            Settings.Default.Save();
             logger.Info("Account list: " + accountsList + "\n");
         }
 
@@ -264,13 +337,10 @@ namespace StrategyTrader
         {
             logger.Info("AccountSummaryEnd. Req Id: " + reqId + "\n");
         }
-        
-       
-
 
         public virtual void openOrderEnd()
         {
-            openOrderEndEnded = true;
+            OpenOrderEndEnded = true;
             logger.Info("OpenOrderEnd");
         }
 
@@ -406,41 +476,47 @@ namespace StrategyTrader
             var userTime = TimeZoneInfo.ConvertTimeFromUtc(dtDateTime, easternZone);
             return userTime.ToString("hh:mm:ss.fff");
         }
-        
-        
+
         public void position(string account, Contract contract, double pos, double avgCost)
         {
         }
+
         public void connectAck()
         {
         }
+
         public void positionMulti(int requestId, string account, string modelCode, Contract contract, double pos,
                                   double avgCost)
         {
         }
+
         public void positionMultiEnd(int requestId)
         {
         }
+
         public void accountUpdateMulti(int requestId, string account, string modelCode, string key, string value,
                                        string currency)
         {
         }
+
         public void accountUpdateMultiEnd(int requestId)
         {
         }
+
         public void securityDefinitionOptionParameter(int reqId, string exchange, int underlyingConId,
                                                       string tradingClass, string multiplier, HashSet<string> expirations,
                                                       HashSet<double> strikes)
         {
         }
+
         public void securityDefinitionOptionParameterEnd(int reqId)
         {
         }
+
         public void softDollarTiers(int reqId, SoftDollarTier[] tiers)
         {
         }
 
-#endregion
+        #endregion UnusedIbApiMethods
     }
-    
 }

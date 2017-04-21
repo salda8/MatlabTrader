@@ -1,11 +1,15 @@
 ﻿using Common.EntityModels;
+using Common.ExtensionMethods;
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StrategyTrader.Logic
 {
     internal class TradingCalendar
     {
-        public bool IsRolloverDay => DateTime.Now.DayOfYear == RolloverDate.DayOfYear;
+        private readonly ICollection<InstrumentSession> instrumentSessions;
+        public bool IsRolloverDay => (TimeOnExchange.DayOfYear >= RolloverDate.DayOfYear && !IsWeekend(TimeOnExchange));
 
         public DateTime RolloverDate => ExpirationDate.AddDays(-ExpirationRule.DaysBefore);
 
@@ -13,19 +17,38 @@ namespace StrategyTrader.Logic
 
         public ExpirationRule ExpirationRule { get; set; }
 
-        public TradingCalendar(ExpirationRule expirationRule, DateTime expirationDate)
+        public DateTime TimeOnExchange => TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.Local, TimeZoneInfo.FindSystemTimeZoneById(ExchangeTimeZone));
+
+        public string ExchangeTimeZone{ get; set; }
+
+        public TradingCalendar(ExpirationRule expirationRule, DateTime expirationDate, ICollection<InstrumentSession> instrumentSessions, string exchangeTimezone)
         {
-            this.ExpirationRule = expirationRule;
-            this.ExpirationDate = expirationDate;
+            this.instrumentSessions = instrumentSessions;
+            ExchangeTimeZone = exchangeTimezone;
+            ExpirationRule = expirationRule;
+            ExpirationDate = expirationDate;
+            
         }
 
-        public static bool IsTradingDay()
+        public bool IsTradingDay()
         {
-            var dt = DateTime.Now;
-            if (dt.DayOfWeek == DayOfWeek.Saturday || dt.DayOfWeek == DayOfWeek.Sunday)
+            var dt = TimeOnExchange;
+            if (IsWeekend(dt)) return false;
+
+            if (instrumentSessions?.Count > 0)
             {
-                return false;
+                var day = dt.DayOfWeek.ToInt();
+                bool toReturn = false;
+                Parallel.ForEach(instrumentSessions, session =>
+                {
+                    if (day == (int)session.OpeningDay)
+                    {
+                        toReturn = true;
+                    }
+                });
+                return toReturn;
             }
+
             if (Properties.Settings.Default.TradingOnBankingHoliday)
             {
                 return IsFederalHoliday(dt);
@@ -34,8 +57,33 @@ namespace StrategyTrader.Logic
             return true;
         }
 
-        public static bool IsTradingHour()
+        private static bool IsWeekend(DateTime dt)
         {
+            if (dt.DayOfWeek == DayOfWeek.Saturday || dt.DayOfWeek == DayOfWeek.Sunday)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool IsTradingHour()
+        {
+            if (instrumentSessions?.Count > 0)
+            {
+                DateTime now = TimeOnExchange;
+                var day = now.DayOfWeek.ToInt();
+                var nowInMinutes = now.Minute;
+                bool toReturn = false;
+                Parallel.ForEach(instrumentSessions, session =>
+                {
+                    if (day == (int)session.OpeningDay && session.ClosingTime.Minutes > nowInMinutes)
+                    {
+                        toReturn = true;
+                    }
+                });
+                return toReturn;
+            }
+
             return true;
         }
 

@@ -42,7 +42,7 @@
       <Value Profile="(Default)">localhost</Value>
     </Setting>
     <Setting Name="AccountID" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">1</Value>
+      <Value Profile="(Default)">99999</Value>
     </Setting>
     <Setting Name="logDirectory" Type="System.String" Scope="User">
       <Value Profile="(Default)">C:\Logs\</Value>
@@ -55,6 +55,9 @@
     </Setting>
     <Setting Name="InstrumentId" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="IBGatewayIP" Type="System.String" Scope="User">
+      <Value Profile="(Default)">127.0.0.1</Value>
     </Setting>
   </Settings>
 </SettingsFile>

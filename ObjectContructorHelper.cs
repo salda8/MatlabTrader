@@ -1,6 +1,7 @@
 using Common.EntityModels;
 using IBApi;
 using System;
+using Common.Enums;
 
 namespace StrategyTrader
 {
@@ -15,7 +16,7 @@ namespace StrategyTrader
                 ExecutionId = execution.ExecId,
                 PermanentId = execution.PermId,
                 InstrumentID = Properties.Settings.Default.InstrumentId,
-                AccountID = Program.AccountID,
+                AccountID = Properties.Settings.Default.AccountID,
                 Quantity = execution.CumQty,
                 Side = execution.Side,
                 OrderId = execution.OrderId,
@@ -24,12 +25,14 @@ namespace StrategyTrader
             };
         }
 
+        
+
         public static OpenOrder GetOpenOrder(Contract contract, Order order, OrderState orderState)
         {
             return new OpenOrder
             {
                 PermanentId = order.PermId,
-                AccountID = Program.AccountID,
+                AccountID = Properties.Settings.Default.AccountID,
                 InstrumentID = Properties.Settings.Default.InstrumentId,
                 Status = orderState.Status,
                 LimitPrice = (decimal)order.LmtPrice,
@@ -54,6 +57,25 @@ namespace StrategyTrader
                 LastFillPrice = new decimal(lastFillPrice),
                 ClientId = clientId,
                 WhyHeld = whyHeld
+            };
+        }
+
+        internal static object GetLiveTrade(double position, double marketPrice, double averageCost, double unrealisedPnl, double realisedPnl)
+        {
+            return new LiveTrade()
+            {
+                Quantity = new decimal(Math.Abs(position)),
+                MarketPrice = new decimal(marketPrice),
+                AveragePrice = new decimal(averageCost),
+                UnrealizedPnL = new decimal(unrealisedPnl),
+                RealizedPnl = new decimal(realisedPnl),
+                TradeDirection = position>0 ? TradeDirection.Long  : TradeDirection.Short,
+                AccountID= Properties.Settings.Default.AccountID,
+                InstrumentID = Properties.Settings.Default.InstrumentId,
+                UpdateTime = DateTime.Now
+
+
+
             };
         }
     }

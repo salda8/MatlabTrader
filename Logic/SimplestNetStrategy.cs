@@ -9,15 +9,18 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
+using System.Threading.Tasks;
+using NLog;
+using RequestsClient = RequestsClient.RequestsClient;
 
 namespace StrategyTrader.Logic
 {
     internal class SimplestNetStrategy : IStrategy
     {
         private readonly IbClient wrapper;
-        private readonly DataRequestClient.DataRequestClient client;
+        private DataRequestClient.DataRequestClient client;
         private List<OHLCBar> data;
-
+        private static Logger logger = LogManager.GetCurrentClassLogger();
         private HistoricalDataRequest historicalDataRequest;
 
         private int dataCount;
@@ -26,17 +29,28 @@ namespace StrategyTrader.Logic
         private Instrument instrument;
         private Contract contract;
         private Contract oldContract;
+        private global::RequestsClient.RequestsClient requestClient;
 
         public SimplestNetStrategy(IbClient wrapper)
         {
             this.wrapper = wrapper;
 
+            InitialiseClients();
+            
+            GetInstrumentAndContract();
+            
+        }
+
+        private void InitialiseClients()
+        {
             client = new DataRequestClient.DataRequestClient(Settings.Default.AccountNumber, Settings.Default.host,
                 Settings.Default.RealTimeDataServerRequestPort, Settings.Default.RealTimeDataServerPublishPort,
                 Settings.Default.HistoricalServerPort);
             client.Connect();
             client.HistoricalDataReceived += HistoricalDataReceived;
-            GetInstrumentAndContract();
+            requestClient = new global::RequestsClient.RequestsClient(Settings.Default.AccountID,
+                Settings.Default.InstrumetnUpdateRequestSocketPort);
+            wrapper.ClientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);
         }
 
         private void HistoricalDataReceived(object sender, HistoricalDataEventArgs e)
@@ -60,8 +74,10 @@ namespace StrategyTrader.Logic
             //{
             //    Trade.MakeMktTrade("SELL", wrapper);
             //}
-            Trade.PlaceMarketOrder(contract, Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? 1 : -1, wrapper);
-            Trade.MakeLmtTrade1(wrapper, 3000, contract);
+
+            Task.Run(() => Trade.PlaceMarketOrder(contract, Common.Utils.Tools.IsOdd(DateTime.Now.Minute) ? 1 : -1, wrapper));
+            Task.Run(() => Trade.MakeLmtTrade1(wrapper, 3000, contract));
+
             Thread.Sleep(10000);
             RolloverPositionAndContract();
             //wrapper.ClientSocket.reqPositions();
@@ -97,22 +113,25 @@ namespace StrategyTrader.Logic
 
         public void StartTrading()
         {
-            while (TradingCalendar.IsTradingDay())
+            while (calendar.IsTradingDay())
             {
                 if (calendar.IsRolloverDay)
                 {
+
                     RolloverPositionAndContract();
                 }
 
-                while (TradingCalendar.IsTradingHour())
+                while (calendar.IsTradingHour())
                 {
                     while (HighResolutionDateTime.UtcNow.Second != 0)
                     {
-                        Thread.Sleep(1);
+
+                        Thread.Sleep(10000);
+                        break;
                     }
 
                     Execute();
-                    Thread.Sleep(10000);
+                    //Thread.Sleep(10000);
                 }
                 Thread.Sleep(10000);
             }
@@ -120,6 +139,7 @@ namespace StrategyTrader.Logic
 
         private void RolloverPositionAndContract()
         {
+            logger.Info(() => "Started roll over of contracts.");
             GetInstrumentAndContract();
             CloseAndReopenPositions();
         }
@@ -135,30 +155,37 @@ namespace StrategyTrader.Logic
             {
                 Thread.Sleep(100);
             }
+            
 
-            wrapper.ClientSocket.reqGlobalCancel();
-
-            double wrapperLiveOrderQuantity = wrapper.LiveOrderQuantity;
+            var wrapperLiveOrderQuantity = wrapper.LiveOrderQuantity;
             List<Order> wrapperOpenOrders = new List<Order>(wrapper.OpenOrders);
             wrapper.ShouldCollectOpenOrders = false;
             wrapper.OpenOrders.Clear();
-            Thread.Sleep(10000);//wait for order to get canceled...
+            wrapper.ClientSocket.reqGlobalCancel();
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (wrapperLiveOrderQuantity != 0)
             {
                 Trade.PlaceMarketOrder(oldContract, -wrapperLiveOrderQuantity, wrapper);
                 Trade.PlaceMarketOrder(contract, wrapperLiveOrderQuantity, wrapper);
             }
 
-            foreach (Order order in wrapperOpenOrders)
+            
+            Thread.Sleep(2000);//wait for open order to get canceled..
+            foreach (var order in wrapperOpenOrders)
             {
                 Trade.PlaceOrder(wrapper, order, contract);
             }
+
+            logger.Info(() => $"New FUTURES contract: {instrument.ToString()}");
+            
+            logger.Info(
+                () =>
+                    $"Roll over of contracts has finished. MARKET positions reopened:{wrapperLiveOrderQuantity}. OPEN ORDER positions reopened:{wrapperOpenOrders.Count}.");
         }
 
         private void GetInstrumentAndContract()
         {
-            var requestClient = new RequestsClient.RequestsClient(Settings.Default.AccountID,
-                Settings.Default.InstrumetnUpdateRequestSocketPort);
+             
             instrument = requestClient.RequestActiveInstrumentContract(Settings.Default.StrategyID);
             oldContract = contract;
             contract = InstrumentToContract(instrument);
@@ -173,14 +200,12 @@ namespace StrategyTrader.Logic
                 SaveToLocalStorage = false
             };
 
-            Properties.Settings.Default.InstrumentId = instrument.ID;
-            Properties.Settings.Default.Save();
+            Settings.Default.InstrumentId = instrument.ID;
+            Settings.Default.Save();
 
-            wrapper.ClientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);//todo it is possible to subscribe to that from server
-            wrapper.ClientSocket.reqOpenOrders();
-            wrapper.ClientSocket.reqPositions();
-
-            calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration);
+            wrapper.ClientSocket.reqAccountUpdates(true, Settings.Default.AccountNumber);
+            
+            calendar = new TradingCalendar(instrument.ExpirationRule, instrument.Expiration, instrument.Sessions, instrument.Exchange.Timezone);
         }
 
         public static Contract InstrumentToContract(Instrument instrument) => new Contract()
