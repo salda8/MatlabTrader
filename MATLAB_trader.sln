@@ -1,31 +1,51 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MATLAB_trader", "MATLAB_trader\MATLAB_trader.csproj", "{758A4822-CB55-4C73-85A3-2B0288564592}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StrategyTrader", "StrategyTrader.csproj", "{758A4822-CB55-4C73-85A3-2B0288564592}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "..\qdms\Common\Common.csproj", "{7EA40D71-4D14-4B86-B07D-932959FA0D20}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RequestsClient", "..\qdms\RequestsClient\RequestsClient.csproj", "{A2306B33-47B8-455F-A1D7-2801AC358CA9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{758A4822-CB55-4C73-85A3-2B0288564592}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{758A4822-CB55-4C73-85A3-2B0288564592}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{758A4822-CB55-4C73-85A3-2B0288564592}.Debug|x64.ActiveCfg = Debug|x64
+		{758A4822-CB55-4C73-85A3-2B0288564592}.Debug|x64.Build.0 = Debug|x64
 		{758A4822-CB55-4C73-85A3-2B0288564592}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{758A4822-CB55-4C73-85A3-2B0288564592}.Release|Any CPU.Build.0 = Release|Any CPU
+		{758A4822-CB55-4C73-85A3-2B0288564592}.Release|x64.ActiveCfg = Release|x64
+		{758A4822-CB55-4C73-85A3-2B0288564592}.Release|x64.Build.0 = Release|x64
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Debug|x64.ActiveCfg = Debug|x64
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Debug|x64.Build.0 = Debug|x64
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Release|x64.ActiveCfg = Release|x64
+		{7EA40D71-4D14-4B86-B07D-932959FA0D20}.Release|x64.Build.0 = Release|x64
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Debug|x64.ActiveCfg = Debug|x64
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Debug|x64.Build.0 = Debug|x64
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Release|x64.ActiveCfg = Release|x64
+		{A2306B33-47B8-455F-A1D7-2801AC358CA9}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 2
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://salda.visualstudio.com/defaultcollection
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = MATLAB_trader\\MATLAB_trader.csproj
-		SccProjectName1 = MATLAB_trader
-		SccLocalPath1 = MATLAB_trader
+	GlobalSection(CodealikeProperties) = postSolution
+		SolutionGuid = 7c5718a9-3cc5-4b40-a50a-a83c85f9a400
 	EndGlobalSection
 EndGlobal

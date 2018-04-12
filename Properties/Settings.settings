@@ -1,0 +1,63 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="StrategyTrader.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="TradingOnBankingHoliday" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="WaitTimeBeforeEquityRequestInMs" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10000</Value>
+    </Setting>
+    <Setting Name="PushPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5402</Value>
+    </Setting>
+    <Setting Name="DealerPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5401</Value>
+    </Setting>
+    <Setting Name="RealTimeDataServerRequestPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5556</Value>
+    </Setting>
+    <Setting Name="RealTimeDataServerPublishPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5557</Value>
+    </Setting>
+    <Setting Name="HistoricalServerPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5555</Value>
+    </Setting>
+    <Setting Name="MessagesServerPullPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5554</Value>
+    </Setting>
+    <Setting Name="MessagesServerPushPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5553</Value>
+    </Setting>
+    <Setting Name="EquityUpdateServerRouterPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5552</Value>
+    </Setting>
+    <Setting Name="ibPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">4002</Value>
+    </Setting>
+    <Setting Name="AccountNumber" Type="System.String" Scope="User">
+      <Value Profile="(Default)">DU15157</Value>
+    </Setting>
+    <Setting Name="host" Type="System.String" Scope="User">
+      <Value Profile="(Default)">localhost</Value>
+    </Setting>
+    <Setting Name="AccountID" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">99999</Value>
+    </Setting>
+    <Setting Name="logDirectory" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\Logs\</Value>
+    </Setting>
+    <Setting Name="StrategyID" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="InstrumetnUpdateRequestSocketPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5558</Value>
+    </Setting>
+    <Setting Name="InstrumentId" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="IBGatewayIP" Type="System.String" Scope="User">
+      <Value Profile="(Default)">127.0.0.1</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

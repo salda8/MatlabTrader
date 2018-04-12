@@ -1,89 +1,97 @@
-﻿using System;
-using System.Collections.Generic;
-using MATLAB_trader.Data;
-using MATLAB_trader.Logic;
+﻿using IBApi;
 using NDesk.Options;
+using NLog;
+using NLog.Targets;
+using StrategyTrader.Properties;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 
-namespace MATLAB_trader
+namespace StrategyTrader
 {
     public class Program
     {
+        public static int AccountID = Settings.Default.AccountID;
+        private static IbClient wrapper;
+
         public static void Main(string[] args)
         {
-            var showHelp = false;
-            var names = new List<string>();
-            var port = new List<int>();
-            var account = new List<string>();
-            var repeat = 1;
+            SetAndCreateLogDirectory();
+            MappingConfiguration.Register();
+            GetAccountNumberAndAccountID();
+            ConnectToIb();
+            new StrategyLauncher(wrapper);
+        }
 
-            var p = new OptionSet
+        private static void SetAndCreateLogDirectory()
+        {
+            if (Directory.Exists(Settings.Default.logDirectory))
             {
-                {
-                    "n|name=", "the {NAME} of someone to greet.",
-                    v => names.Add(v)
-                },
-                {
-                    "p|port=", "the {port} of someone to greet.",
-                    (int v) => port.Add(v)
-                },
-                {
-                    "a|account=", "the {account} of someone to greet.",
-                    v => account.Add(v)
-                },
-                {
-                    "m|matlab=", "the {account} of someone to greet.",
-                    v => Matlab.Matlabexe = v
-                },
-
-                {
-                    "h|help", "show this message and exit",
-                    v => showHelp = v != null
-                }
-            };
-
-            List<string> extra;
-            try
-            {
-                extra = p.Parse(args);
-            }
-            catch (OptionException e)
-            {
-                Console.Write("greet: ");
-                Console.WriteLine(e.Message);
-                Console.WriteLine("Try `greet --help' for more information.");
-                return;
-            }
-
-            if (showHelp)
-            {
-                // ShowHelp(p);
-                return;
-            }
-
-            if (extra.Count > 0)
-            {
-                var message = string.Join(" ", extra.ToArray());
-                Console.WriteLine
-                    (" At least one Unrecognized parameter. Using new message: {0}", message);
+                ((FileTarget)LogManager.Configuration.FindTargetByName("logfile")).FileName =
+                    Settings.Default.logDirectory + "Log.log";
             }
             else
             {
-                for (var i = 0; i < account.Count; i++)
-                {
-                    AccountSettings.AccountSettingsList.Add(new AccountSettings
-                    {
-                        AccountNumber = account[i],
-                        Port = port[i]
-                    });
-                    Console.WriteLine("Using Account number: " + account[i] + " Port:" + port[i] +
-                                      " on this matlab function:" + Matlab.Matlabexe);
-                }
+                Directory.CreateDirectory(Settings.Default.logDirectory);
+                ((FileTarget)LogManager.Configuration.FindTargetByName("logfile")).FileName =
+                    Settings.Default.logDirectory + "Log.log";
             }
-
-            Matlab.StartTrading();
-
-            //Console.ReadKey();
-            //return 0;
         }
+
+        private static void ConnectToIb()
+        {
+            RequestsClient.RequestsClient client = new RequestsClient.RequestsClient(AccountID,
+                Settings.Default.EquityUpdateServerRouterPort, Settings.Default.MessagesServerPullPort, Settings.Default.AccountNumber);
+            client.Connect();
+            
+            
+
+            wrapper = new IbClient(client);
+            EClientSocket clientSocket = wrapper.ClientSocket;
+            EReaderSignal readerSignal = wrapper.Signal;
+
+            clientSocket.eConnect(Settings.Default.IBGatewayIP, Settings.Default.ibPort, 0);
+           
+            //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
+            var reader = new EReader(clientSocket, readerSignal);
+            reader.Start();
+            //Once the messages are in the queue, an additional thread need to fetch them
+            new Thread(() =>
+            {
+                while (clientSocket.IsConnected())
+                {
+                    readerSignal.waitForSignal();
+                    reader.processMsgs();
+                }
+            })
+            { IsBackground = true }.Start();
+
+            while (wrapper.NextOrderId <= 0) { }
+            
+           
+            
+            
+        }
+
+        private static void GetAccountNumberAndAccountID()
+        {
+            var requestClient = new RequestsClient.RequestsClient(Settings.Default.AccountID,
+                Settings.Default.InstrumetnUpdateRequestSocketPort);
+            var acc = requestClient.RequestAccount(Settings.Default.StrategyID);
+            if (acc == null)
+            {
+                throw new ArgumentNullException("No account info received.");
+            }
+            requestClient.Dispose();
+
+            Settings.Default.AccountNumber = acc.AccountNumber;
+            Settings.Default.AccountID = acc.ID;
+            Settings.Default.Save();
+        }
+
+        
+
+        
     }
 }
